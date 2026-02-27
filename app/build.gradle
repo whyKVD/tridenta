@@ -84,8 +84,11 @@ dependencies {
     debugImplementation libs.compose.androidx.ui.test.manifest
     implementation libs.compose.androidx.runtime.livedata
     implementation libs.androidx.material3
+    implementation libs.glance
     implementation libs.glance.appwidget
     implementation libs.glance.material3
+    implementation libs.glance.preview
+    implementation libs.glance.appwidget.preview
 
     // Navigation
     implementation libs.compose.destinations.core
