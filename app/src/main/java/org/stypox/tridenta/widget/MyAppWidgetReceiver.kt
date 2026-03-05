@@ -11,17 +11,5 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MyAppWidgetReceiver : GlanceAppWidgetReceiver() {
-    @Inject
-    lateinit var stopDao: StopDao
-
-    @Inject
-    lateinit var lineDao: LineDao
-
-    @Inject
-    lateinit var linesRepository: LinesRepository
-
-    @Inject
-    lateinit var tripsRepository: LineTripsRepository
-
-    override val glanceAppWidget: GlanceAppWidget get() = MyAppWidget(stopDao, lineDao,linesRepository,tripsRepository)
+    override val glanceAppWidget: GlanceAppWidget get() = MyAppWidget()
 }

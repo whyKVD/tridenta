@@ -3,21 +3,14 @@ package org.stypox.tridenta.widget
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceId
-import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
-import androidx.glance.background
-import androidx.glance.layout.Alignment
-import androidx.glance.layout.Column
-import androidx.glance.layout.Row
-import androidx.glance.layout.Spacer
-import androidx.glance.layout.fillMaxSize
-import androidx.glance.layout.fillMaxWidth
 import androidx.glance.preview.ExperimentalGlancePreviewApi
 import androidx.glance.preview.Preview
-import androidx.glance.text.Text
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.stypox.tridenta.db.LineDao
@@ -35,22 +28,16 @@ import org.stypox.tridenta.repo.LinesRepository
 import org.stypox.tridenta.repo.data.UiStopTime
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.ui.MainActivity
+import org.stypox.tridenta.widget.actions.NextTripAction
+import org.stypox.tridenta.widget.actions.PrevTripAction
+import org.stypox.tridenta.widget.actions.ReloadTripAction
+import org.stypox.tridenta.widget.actions.WidgetEntryPoint
+import org.stypox.tridenta.widget.ui.TripViewGlance
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
-enum class State {
-    Loading,
-    Success,
-    Error
-}
-
-class MyAppWidget(
-    private val stopDao: StopDao,
-    private val lineDao: LineDao,
-    private val linesRepository: LinesRepository,
-    private val tripsRepository: LineTripsRepository
-) : GlanceAppWidget() {
+class MyAppWidget() : GlanceAppWidget() {
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId
@@ -63,6 +50,9 @@ class MyAppWidget(
         var trip: UiTrip? = null
         lateinit var favoriteLines: List<DbLine>
         try {
+            val hiltEntryPoint = EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+            val tripsRepository = hiltEntryPoint.lineTripsRepository()
+            val lineDao = hiltEntryPoint.lineDao()
             withContext(Dispatchers.IO) {
                 val lines = lineDao.getAllLines()
                 favoriteLines = lines.filter { l -> l.isFavorite }
@@ -79,42 +69,22 @@ class MyAppWidget(
         } catch (e: Exception) {
             logError(e.message!!, e.cause)
             isError = true
+            isLoading = false
         }
 
         provideContent {
             GlanceTheme() {
                 TripViewGlance(
                     trip, error = isError, loading = isLoading,
-                    onReloadAction = actionStartActivity<MainActivity>(),
-                    onPrevAction = actionStartActivity<MainActivity>(),
-                    onNextAction = actionStartActivity<MainActivity>(),
+                    onReloadAction = actionRunCallback<ReloadTripAction>(),
+                    onPrevAction = actionRunCallback<PrevTripAction>(),
+                    onNextAction = actionRunCallback<NextTripAction>(),
                     onLineClickAction = actionStartActivity<MainActivity>(),
                     stopIdToHighlight = null,
                     stopTypeToHighlight = null,
                 )
             }
         }
-    }
-}
-
-@Composable
-fun MyContent(trip: UiTrip) {
-    Column(
-        modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.background),
-        verticalAlignment = Alignment.Top,
-        horizontalAlignment = Alignment.Start
-    ) {
-        Row(GlanceModifier.fillMaxWidth()) {
-            Text("Trips -")
-            Spacer()
-            Text(">  ")
-        }
-        TripViewStopsGlance(
-            trip,
-            stopIdToHighlight = null,
-            stopTypeToHighlight = trip.type,
-            modifier = GlanceModifier.defaultWeight()
-        )
     }
 }
 
@@ -256,7 +226,8 @@ fun MyWidgetPreview() {
                     )
                 },
                 busId = 886,
-            ), error = false, loading = false,
+            ),
+            error = false, loading = false,
             onReloadAction = actionStartActivity<MainActivity>(),
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),

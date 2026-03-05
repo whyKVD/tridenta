@@ -1,5 +1,6 @@
-package org.stypox.tridenta.widget
+package org.stypox.tridenta.widget.ui
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.Button
@@ -9,6 +10,7 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
+import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.background
@@ -25,6 +27,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
@@ -34,11 +37,16 @@ import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.enums.StopLineType
 import org.stypox.tridenta.repo.data.UiStopTime
 import org.stypox.tridenta.repo.data.UiTrip
-import org.stypox.tridenta.sample.SampleDbStopProvider
+import org.stypox.tridenta.ui.MainActivity
 import org.stypox.tridenta.util.formatDateFull
-import org.stypox.tridenta.util.formatDurationMinutes
+import org.stypox.tridenta.util.textColorOnBackground
+import org.stypox.tridenta.util.toLineColor
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+
+fun formatDurationMinutes(context: Context, minutes: Int): String {
+    return context.getString(R.string.short_minute_format, minutes)
+}
 
 @Composable
 fun TripViewGlance(
@@ -57,7 +65,7 @@ fun TripViewGlance(
 ) {
     val context = LocalContext.current
 
-    Box (
+    Box(
         modifier = modifier.fillMaxSize().background(GlanceTheme.colors.background),
         contentAlignment = Alignment.Center
     ) {
@@ -100,7 +108,10 @@ fun TripViewGlance(
 
         } else if (error) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = context.getString(R.string.error), style = TextStyle(color = GlanceTheme.colors.error))
+                Text(
+                    text = context.getString(R.string.error),
+                    style = TextStyle(color = GlanceTheme.colors.error)
+                )
                 Button(text = context.getString(R.string.reload), onClick = onReloadAction)
             }
 
@@ -111,12 +122,18 @@ fun TripViewGlance(
             ) {
                 Text(
                     text = context.getString(R.string.no_trip_found),
-                    style = TextStyle(fontWeight = FontWeight.Bold, color = GlanceTheme.colors.onBackground),
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = GlanceTheme.colors.onBackground
+                    ),
                     modifier = GlanceModifier.padding(bottom = 4.dp)
                 )
                 Text(
                     text = context.getString(R.string.no_trip_found_description),
-                    style = TextStyle(textAlign = TextAlign.Center, color = GlanceTheme.colors.onBackground)
+                    style = TextStyle(
+                        textAlign = TextAlign.Center,
+                        color = GlanceTheme.colors.onBackground
+                    )
                 )
             }
         }
@@ -151,9 +168,10 @@ private fun TripViewTopRowGlance(
     ) {
         if (trip.line != null) {
             // Replaced Surface with Box + background
+            val shortNameBackground = trip.line.color.toLineColor()
             Box(
                 modifier = GlanceModifier
-                    .background(GlanceTheme.colors.primaryContainer) // Use a theme color instead of dynamic custom color for simplicity in Glance
+                    .background(shortNameBackground) // Use a theme color instead of dynamic custom color for simplicity in Glance
                     .padding(8.dp)
                     .clickable(onLineClickAction)
             ) {
@@ -161,7 +179,7 @@ private fun TripViewTopRowGlance(
                     text = trip.line.shortName,
                     maxLines = 1,
                     style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer,
+                        color = ColorProvider(textColorOnBackground(shortNameBackground)),
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -174,7 +192,10 @@ private fun TripViewTopRowGlance(
             Text(
                 text = trip.headSign,
                 maxLines = 1,
-                style = TextStyle(color = GlanceTheme.colors.onBackground, fontWeight = FontWeight.Medium)
+                style = TextStyle(
+                    color = GlanceTheme.colors.onBackground,
+                    fontWeight = FontWeight.Medium
+                )
             )
 
             val dateOrDelayText = if (trip.lastEventReceivedAt == null) {
@@ -186,11 +207,11 @@ private fun TripViewTopRowGlance(
                     ?: context.getString(R.string.no_date_time_information)
             } else {
                 if (trip.delay < 0)
-                    context.getString(R.string.early, formatDurationMinutes(-trip.delay))
+                    context.getString(R.string.early, formatDurationMinutes(context,-trip.delay))
                 else if (trip.delay == 0)
                     context.getString(R.string.on_time)
                 else
-                    context.getString(R.string.late, formatDurationMinutes(trip.delay))
+                    context.getString(R.string.late, formatDurationMinutes(context,trip.delay))
             }
             Text(
                 text = dateOrDelayText,
@@ -219,9 +240,8 @@ private fun TripViewBottomRowGlance(
             .background(GlanceTheme.colors.surfaceVariant)
             .padding(16.dp)
     ) {
-        // You MUST replace R.drawable.ic_... with your actual XML drawables
         Image(
-            provider = ImageProvider(R.drawable.arrow_left), // Placeholder
+            provider = ImageProvider(R.drawable.arrow_left),
             contentDescription = context.getString(R.string.previous),
             modifier = GlanceModifier.clickable(onPrevAction).defaultWeight()
         )
@@ -230,21 +250,21 @@ private fun TripViewBottomRowGlance(
             CircularProgressIndicator(modifier = GlanceModifier.defaultWeight())
         } else {
             Image(
-                provider = ImageProvider(R.drawable.refresh), // Placeholder
+                provider = ImageProvider(R.drawable.refresh),
                 contentDescription = context.getString(R.string.reload),
                 modifier = GlanceModifier.clickable(onReloadAction).defaultWeight()
             )
         }
 
         Image(
-            provider = ImageProvider(R.drawable.arrow_right), // Placeholder
+            provider = ImageProvider(R.drawable.arrow_right),
             contentDescription = context.getString(R.string.next),
             modifier = GlanceModifier.clickable(onNextAction).defaultWeight()
         )
     }
 }
 
-/*@OptIn(ExperimentalGlancePreviewApi::class)
+@OptIn(ExperimentalGlancePreviewApi::class)
 @Preview
 @Composable
 private fun TripViewPreview() {
@@ -357,45 +377,35 @@ private fun TripViewPreview() {
     val referenceDateTime =
         OffsetDateTime.of(2022, 9, 26, 9, 33, 17, 328943849, ZoneOffset.UTC)
     GlanceTheme {
-        Surface(
-            color = MaterialTheme.colorScheme.background
-        ) {
-            var loading by rememberSaveable { mutableStateOf(true) }
-            val stopToHighlight = SampleDbStopProvider().values.first()
-            TripView(
-                trip = UiTrip(
-                    delay = 1,
-                    direction = Direction.Backward,
-                    lastEventReceivedAt = referenceDateTime.minusMinutes(3),
-                    lineId = sampleDbLines.first().lineId,
-                    line = sampleDbLines.first(),
-                    headSign = "Conci \"Villazzano 3\"",
-                    tripId = "0003726592022061120220911",
-                    type = StopLineType.Urban,
-                    completedStops = 2,
-                    stopTimes = sampleDbStops.mapIndexed { index, dbStop ->
-                        UiStopTime(
-                            arrivalTime = referenceDateTime.plusMinutes((index - 2).toLong()),
-                            departureTime = referenceDateTime.plusMinutes((index + index % 2 - 2).toLong()),
-                            stop = dbStop
-                        )
-                    },
-                    busId = 886,
-                ),
-                setReferenceDateTime = {},
-                error = false,
-                loading = loading,
-                onReload = { loading = !loading },
-                prevEnabled = true,
-                onPrevClicked = {},
-                nextEnabled = false,
-                onNextClicked = {},
-                stopIdToHighlight = stopToHighlight.stopId,
-                stopTypeToHighlight = stopToHighlight.type,
-                navigator = EmptyDestinationsNavigator,
-                onLineClick = {},
-            )
-        }
+        TripViewGlance(
+            trip = UiTrip(
+                delay = 1,
+                direction = Direction.Backward,
+                lastEventReceivedAt = referenceDateTime.minusMinutes(3),
+                lineId = sampleDbLines.first().lineId,
+                line = sampleDbLines.first(),
+                headSign = "Conci \"Villazzano 3\"",
+                tripId = "0003726592022061120220911",
+                type = StopLineType.Urban,
+                completedStops = 2,
+                stopTimes = sampleDbStops.mapIndexed { index, dbStop ->
+                    UiStopTime(
+                        arrivalTime = referenceDateTime.plusMinutes((index - 2).toLong()),
+                        departureTime = referenceDateTime.plusMinutes((index + index % 2 - 2).toLong()),
+                        stop = dbStop
+                    )
+                },
+                busId = 886,
+            ),
+            error = false,
+            loading = true,
+            stopIdToHighlight = null,
+            stopTypeToHighlight = null,
+            onReloadAction = actionStartActivity<MainActivity>(),
+            onPrevAction = actionStartActivity<MainActivity>(),
+            onNextAction = actionStartActivity<MainActivity>(),
+            onLineClickAction = actionStartActivity<MainActivity>()
+        )
     }
 }
 
@@ -403,26 +413,18 @@ private fun TripViewPreview() {
 @Preview()
 @Composable
 private fun TripViewPreviewLoading() {
+    val loading = true
     GlanceTheme {
-        Surface(
-            color = MaterialTheme.colorScheme.background
-        ) {
-            var loading by rememberSaveable { mutableStateOf(true) }
-            TripView(
-                trip = null,
-                setReferenceDateTime = {},
-                error = false,
-                loading = loading,
-                onReload = { loading = !loading },
-                prevEnabled = true,
-                onPrevClicked = {},
-                nextEnabled = false,
-                onNextClicked = {},
-                stopIdToHighlight = null,
-                stopTypeToHighlight = null,
-                navigator = EmptyDestinationsNavigator,
-                onLineClick = {},
-            )
-        }
+        TripViewGlance(
+            trip = null,
+            error = false,
+            loading = loading,
+            stopIdToHighlight = null,
+            stopTypeToHighlight = null,
+            onReloadAction = actionStartActivity<MainActivity>(),
+            onPrevAction = actionStartActivity<MainActivity>(),
+            onNextAction = actionStartActivity<MainActivity>(),
+            onLineClickAction = actionStartActivity<MainActivity>()
+        )
     }
-}*/
+}

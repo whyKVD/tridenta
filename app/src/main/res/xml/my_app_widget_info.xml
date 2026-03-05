@@ -2,5 +2,6 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:resizeMode="vertical|horizontal"
-    android:minWidth="250dp">
+    android:minWidth="250dp"
+    android:configure="org.stypox.tridenta.widget.WidgetConfigurationActivity">
 </appwidget-provider>

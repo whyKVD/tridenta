@@ -1,4 +1,4 @@
-package org.stypox.tridenta.widget
+package org.stypox.tridenta.widget.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -22,6 +22,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
@@ -185,6 +186,7 @@ private fun TripViewStopItemGlance(
                 text = formatTime(stopTime.arrivalTime),
                 maxLines = 1,
                 style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
                     fontWeight = highlightWeight,
                     textDecoration = lateDecoration
                 ),
@@ -203,6 +205,7 @@ private fun TripViewStopItemGlance(
                     text = formatTime(stopTime.departureTime),
                     maxLines = 1,
                     style = TextStyle(
+                        color = GlanceTheme.colors.onSurface,
                         fontWeight = highlightWeight,
                         textDecoration = lateDecoration
                     )
