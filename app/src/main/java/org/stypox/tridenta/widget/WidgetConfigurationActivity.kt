@@ -27,13 +27,10 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.stypox.tridenta.db.data.DbLine
-import org.stypox.tridenta.enums.Direction
-import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.ui.lines.LineItem
 import org.stypox.tridenta.ui.lines.LinesViewModel
 import org.stypox.tridenta.ui.theme.TitleText
 import org.stypox.tridenta.widget.actions.WidgetKeys
-import java.time.ZonedDateTime
 
 @AndroidEntryPoint
 class WidgetConfigurationActivity:
@@ -97,6 +94,7 @@ class WidgetConfigurationActivity:
             updateAppWidgetState(context, glanceId) { prefs ->
                 prefs[WidgetKeys.LINE_ID] = line.lineId
                 prefs[WidgetKeys.LINE_TYPE] = line.type.name
+                prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] = true
             }
             MyAppWidget().updateAll(this@WidgetConfigurationActivity)
 

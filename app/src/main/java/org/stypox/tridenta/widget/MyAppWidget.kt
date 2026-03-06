@@ -1,6 +1,8 @@
 package org.stypox.tridenta.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,7 +14,9 @@ import androidx.glance.GlanceId
 import androidx.glance.GlanceTheme
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
 import androidx.glance.preview.ExperimentalGlancePreviewApi
@@ -54,11 +58,19 @@ class MyAppWidget : GlanceAppWidget() {
         // operations.
 
         provideContent {
+            val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+            val configIntent = Intent(context, WidgetConfigurationActivity::class.java).apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+
+                // These flags ensure the activity opens properly from the launcher context
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+            }
             var trip by remember { mutableStateOf<UiTrip?>(null) }
             var isLoading by remember { mutableStateOf(true) }
             var isError by remember { mutableStateOf(false) }
             val prefs = currentState<Preferences>()
             val lineId = prefs[WidgetKeys.LINE_ID]
+            val isInitalDataLoaded = prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] ?: false
             logInfo("lineId: ${lineId.toString()}")
             val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
             logInfo("lineType: ${lineTypeString ?: "null"}")
@@ -86,13 +98,13 @@ class MyAppWidget : GlanceAppWidget() {
                     isLoading = false
                 }
             }
-            GlanceTheme() {
+            GlanceTheme {
                 TripViewGlance(
-                    trip, error = isError, loading = isLoading,
+                    trip, error = isError, loading = isLoading && isInitalDataLoaded,
                     onReloadAction = actionRunCallback<ReloadTripAction>(),
                     onPrevAction = actionRunCallback<PrevTripAction>(),
                     onNextAction = actionRunCallback<NextTripAction>(),
-                    onLineClickAction = actionStartActivity<MainActivity>(),
+                    onLineClickAction = actionStartActivity(configIntent),
                     stopIdToHighlight = null,
                     stopTypeToHighlight = null,
                 )
@@ -217,7 +229,7 @@ fun MyWidgetPreview() {
     val referenceDateTime =
         OffsetDateTime.of(2022, 9, 26, 9, 33, 17, 328943849, ZoneOffset.UTC)
     // Provide mock data to your content
-    GlanceTheme() {
+    GlanceTheme {
         TripViewGlance(
             UiTrip(
                 delay = 1,
