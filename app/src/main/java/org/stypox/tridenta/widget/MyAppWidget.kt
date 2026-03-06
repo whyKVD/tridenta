@@ -79,21 +79,18 @@ class MyAppWidget : GlanceAppWidget() {
             val isInitalDataLoaded = prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] ?: false
             logInfo("lineId: ${lineId.toString()}")
             val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
+            val tripIndex = prefs[WidgetKeys.TRIP_INDEX]
             logInfo("lineType: ${lineTypeString ?: "null"}")
             LaunchedEffect(lineId, lineTypeString) {
+                if (lineId == null || lineTypeString == null) {
+                    return@LaunchedEffect
+                }
                 try {
                     val hiltEntryPoint =
                         EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
                     val tripsRepository = hiltEntryPoint.lineTripsRepository()
-                    if (lineId != null && lineTypeString != null) {
-                        val fetchedTrip = withContext(Dispatchers.IO) {
-                            tripsRepository.getUiTrip(
-                                lineId,
-                                StopLineType.valueOf(lineTypeString),
-                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
-                                Direction.valueOf(directionFilter)
-                            ).third
-                        }
+
+                    if (tripIndex == null) {
                         withContext(Dispatchers.IO) {
                             updateAppWidgetState(context, id) { prefs ->
                                 val fetchedTrip = tripsRepository.getUiTrip(
@@ -102,11 +99,23 @@ class MyAppWidget : GlanceAppWidget() {
                                     ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
                                     Direction.valueOf(directionFilter)
                                 )
-                                prefs[WidgetKeys.CURRENT_TRIP_ID] = fetchedTrip.second
+                                prefs[WidgetKeys.TRIP_INDEX] = fetchedTrip.second
                                 prefs[WidgetKeys.TRIPS_IN_DAY_COUNT] = fetchedTrip.first
+                                trip = fetchedTrip.third
                             }
                         }
-                        trip = fetchedTrip
+                        return@LaunchedEffect
+                    }
+                    withContext(Dispatchers.IO) {
+                        updateAppWidgetState(context, id) { prefs ->
+                            val (fetchedTrip, _) = tripsRepository.getUiTrip(
+                                lineId,
+                                StopLineType.valueOf(lineTypeString),
+                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
+                                tripIndex
+                            )
+                            trip = fetchedTrip
+                        }
                     }
                 } catch (e: Exception) {
                     logError(e.message!!, e.cause)

@@ -34,7 +34,7 @@ import org.stypox.tridenta.ui.theme.TitleText
 import org.stypox.tridenta.widget.actions.WidgetKeys
 
 @AndroidEntryPoint
-class WidgetConfigurationActivity:
+class WidgetConfigurationActivity :
     ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -93,6 +93,7 @@ class WidgetConfigurationActivity:
 
             // 3. Save the selected data to this specific widget's Preferences
             updateAppWidgetState(context, glanceId) { prefs ->
+                prefs.clear()
                 prefs[WidgetKeys.LINE_ID] = line.lineId
                 prefs[WidgetKeys.LINE_TYPE] = line.type.name
                 prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] = true
