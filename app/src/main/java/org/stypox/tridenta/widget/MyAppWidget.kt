@@ -2,19 +2,25 @@ package org.stypox.tridenta.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceTheme
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
+import androidx.glance.currentState
 import androidx.glance.preview.ExperimentalGlancePreviewApi
 import androidx.glance.preview.Preview
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.stypox.tridenta.db.LineDao
-import org.stypox.tridenta.db.StopDao
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
 import org.stypox.tridenta.enums.Area
@@ -23,8 +29,7 @@ import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.enums.StopLineType
 import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.log.logError
-import org.stypox.tridenta.repo.LineTripsRepository
-import org.stypox.tridenta.repo.LinesRepository
+import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.repo.data.UiStopTime
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.ui.MainActivity
@@ -32,12 +37,14 @@ import org.stypox.tridenta.widget.actions.NextTripAction
 import org.stypox.tridenta.widget.actions.PrevTripAction
 import org.stypox.tridenta.widget.actions.ReloadTripAction
 import org.stypox.tridenta.widget.actions.WidgetEntryPoint
+import org.stypox.tridenta.widget.actions.WidgetKeys
 import org.stypox.tridenta.widget.ui.TripViewGlance
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
-class MyAppWidget() : GlanceAppWidget() {
+class MyAppWidget : GlanceAppWidget() {
+    override val stateDefinition = PreferencesGlanceStateDefinition
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId
@@ -45,34 +52,40 @@ class MyAppWidget() : GlanceAppWidget() {
         // In this method, load data needed to render the AppWidget.
         // Use `withContext` to switch to another thread for long running
         // operations.
-        var isError = false
-        var isLoading = true
-        var trip: UiTrip? = null
-        lateinit var favoriteLines: List<DbLine>
-        try {
-            val hiltEntryPoint = EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
-            val tripsRepository = hiltEntryPoint.lineTripsRepository()
-            val lineDao = hiltEntryPoint.lineDao()
-            withContext(Dispatchers.IO) {
-                val lines = lineDao.getAllLines()
-                favoriteLines = lines.filter { l -> l.isFavorite }
-                val line = favoriteLines[0]
-                val tmp = tripsRepository.getUiTrip(
-                    line.lineId,
-                    line.type,
-                    ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
-                    Direction.ForwardAndBackward
-                ).third
-                trip = tmp
-                isLoading = false
-            }
-        } catch (e: Exception) {
-            logError(e.message!!, e.cause)
-            isError = true
-            isLoading = false
-        }
 
         provideContent {
+            var trip by remember { mutableStateOf<UiTrip?>(null) }
+            var isLoading by remember { mutableStateOf(true) }
+            var isError by remember { mutableStateOf(false) }
+            val prefs = currentState<Preferences>()
+            val lineId = prefs[WidgetKeys.LINE_ID]
+            logInfo("lineId: ${lineId.toString()}")
+            val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
+            logInfo("lineType: ${lineTypeString ?: "null"}")
+            LaunchedEffect(lineId, lineTypeString) {
+                try {
+                    val hiltEntryPoint =
+                        EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+                    val tripsRepository = hiltEntryPoint.lineTripsRepository()
+                    if (lineId != null && lineTypeString != null) {
+                        val fetchedTrip = withContext(Dispatchers.IO) {
+                            tripsRepository.getUiTrip(
+                                lineId,
+                                StopLineType.valueOf(lineTypeString),
+                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
+                                Direction.ForwardAndBackward
+                            ).third
+                        }
+
+                        trip = fetchedTrip
+                    }
+                } catch (e: Exception) {
+                    logError(e.message!!, e.cause)
+                    isError = true
+                } finally {
+                    isLoading = false
+                }
+            }
             GlanceTheme() {
                 TripViewGlance(
                     trip, error = isError, loading = isLoading,
@@ -89,8 +102,6 @@ class MyAppWidget() : GlanceAppWidget() {
 }
 
 @OptIn(ExperimentalGlancePreviewApi::class)
-// 3x2 Widget
-@Preview(widthDp = 250, heightDp = 130)
 // 3x3 Widget
 @Preview(widthDp = 250, heightDp = 203)
 // 3x4 Widget

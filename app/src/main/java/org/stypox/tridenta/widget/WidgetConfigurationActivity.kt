@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -17,17 +18,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
 import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.stypox.tridenta.db.data.DbLine
+import org.stypox.tridenta.enums.Direction
+import org.stypox.tridenta.extractor.ROME_ZONE_ID
+import org.stypox.tridenta.ui.lines.LineItem
+import org.stypox.tridenta.ui.lines.LinesViewModel
+import org.stypox.tridenta.ui.theme.TitleText
 import org.stypox.tridenta.widget.actions.WidgetKeys
+import java.time.ZonedDateTime
 
 @AndroidEntryPoint
-class WidgetConfigurationActivity : ComponentActivity() {
+class WidgetConfigurationActivity:
+    ComponentActivity() {
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
@@ -51,22 +61,30 @@ class WidgetConfigurationActivity : ComponentActivity() {
         setResult(Activity.RESULT_CANCELED)
 
         setContent {
-            val viewModel: WidgetConfigViewModel = hiltViewModel()
+            val viewModel: LinesViewModel = hiltViewModel()
 
-            val availableLines by viewModel.availableLines.collectAsState()
+            // 2. Collect the complex UI state
+            val uiState by viewModel.uiState.collectAsState()
 
-            LineSelectionScreen(
-                lines = availableLines,
-                onLineSelected = { selectedLine ->
-                    saveWidgetConfiguration(selectedLine)
-                }
-            )
+            if (uiState.loading) {
+                CircularProgressIndicator() // Show loading spinner
+            } else if (uiState.error) {
+                Text("Error loading lines. Please try again.")
+            } else {
+                // 4. Pass the loaded lines to your selection screen
+                LineSelectionScreen(
+                    lines = uiState.lines,
+                    onLineSelected = { selectedLine ->
+                        saveWidgetConfiguration(selectedLine)
+                    }
+                )
+            }
         }
     }
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun saveWidgetConfiguration(line: DbLine) {
-        val context = this
+        val context = applicationContext
 
         // We use GlobalScope or a dedicated CoroutineScope because the activity
         // will finish immediately, and we need this save to complete.
@@ -79,18 +97,17 @@ class WidgetConfigurationActivity : ComponentActivity() {
             updateAppWidgetState(context, glanceId) { prefs ->
                 prefs[WidgetKeys.LINE_ID] = line.lineId
                 prefs[WidgetKeys.LINE_TYPE] = line.type.name
-                prefs[WidgetKeys.IS_LOADED] = false // Forces the widget to fetch fresh data
             }
-
-            // 4. Tell the widget to redraw now that it has a configuration
-            MyAppWidget().update(context, glanceId)
+            MyAppWidget().updateAll(this@WidgetConfigurationActivity)
 
             // 5. Tell the Android OS that the configuration was successful
-            val resultValue = Intent().apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            withContext(Dispatchers.Main) {
+                val resultValue = Intent().apply {
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                }
+                setResult(Activity.RESULT_OK, resultValue)
+                finish()
             }
-            setResult(Activity.RESULT_OK, resultValue)
-            finish()
         }
     }
 }
@@ -98,10 +115,11 @@ class WidgetConfigurationActivity : ComponentActivity() {
 @Composable
 fun LineSelectionScreen(lines: List<DbLine>, onLineSelected: (DbLine) -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item { TitleText("Seleziona la linea:") }
         items(lines) { line ->
-            Text(
-                text = "Line ${line.shortName}",
-                modifier = Modifier.clickable { onLineSelected(line) }
+            LineItem(
+                line, true,
+                modifier = Modifier.clickable { onLineSelected(line) },
             )
         }
     }

@@ -13,7 +13,8 @@ object WidgetKeys {
     val TRIPS_IN_DAY_COUNT = intPreferencesKey("trips_in_day_count")
 
     // Save booleans
-    val IS_LOADED = booleanPreferencesKey("is_loading")
+    val IS_LOADING = booleanPreferencesKey("is_loading")
+    val IS_INITIAL_DATA_LOADED = booleanPreferencesKey("is_initial_data_loaded")
     val HAS_ERROR = booleanPreferencesKey("has_error")
     val PREV_ENABLED = booleanPreferencesKey("prev_enabled")
     val NEXT_ENABLED = booleanPreferencesKey("next_enabled")
