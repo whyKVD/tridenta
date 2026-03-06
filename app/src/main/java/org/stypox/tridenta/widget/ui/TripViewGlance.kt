@@ -15,6 +15,7 @@ import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -28,7 +29,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
 import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
@@ -210,7 +210,7 @@ private fun TripViewTopRowGlance(
                     text = trip.line.shortName,
                     maxLines = 1,
                     style = TextStyle(
-                        color = ColorProvider(textColor),
+                        color = ColorProvider(day = textColor, night = textColor),
                         fontWeight = FontWeight.Bold
                     )
                 )
