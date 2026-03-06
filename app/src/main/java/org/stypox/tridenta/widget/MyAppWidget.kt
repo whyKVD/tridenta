@@ -18,6 +18,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.currentState
 import androidx.glance.preview.ExperimentalGlancePreviewApi
 import androidx.glance.preview.Preview
@@ -58,6 +59,7 @@ class MyAppWidget : GlanceAppWidget() {
         // operations.
 
         provideContent {
+            val prefs = currentState<Preferences>()
             val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
             val configIntent = Intent(context, WidgetConfigurationActivity::class.java).apply {
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -66,9 +68,13 @@ class MyAppWidget : GlanceAppWidget() {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
             }
             var trip by remember { mutableStateOf<UiTrip?>(null) }
-            var isLoading by remember { mutableStateOf(true) }
             var isError by remember { mutableStateOf(false) }
-            val prefs = currentState<Preferences>()
+            var isLoading by remember { mutableStateOf(prefs[WidgetKeys.IS_LOADING] ?: true) }
+            var directionFilter by remember {
+                mutableStateOf(
+                    prefs[WidgetKeys.DIRECTION_FILTER] ?: Direction.ForwardAndBackward.name
+                )
+            }
             val lineId = prefs[WidgetKeys.LINE_ID]
             val isInitalDataLoaded = prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] ?: false
             logInfo("lineId: ${lineId.toString()}")
@@ -85,10 +91,21 @@ class MyAppWidget : GlanceAppWidget() {
                                 lineId,
                                 StopLineType.valueOf(lineTypeString),
                                 ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
-                                Direction.ForwardAndBackward
+                                Direction.valueOf(directionFilter)
                             ).third
                         }
-
+                        withContext(Dispatchers.IO) {
+                            updateAppWidgetState(context, id) { prefs ->
+                                val fetchedTrip = tripsRepository.getUiTrip(
+                                    lineId,
+                                    StopLineType.valueOf(lineTypeString),
+                                    ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
+                                    Direction.valueOf(directionFilter)
+                                )
+                                prefs[WidgetKeys.CURRENT_TRIP_ID] = fetchedTrip.second
+                                prefs[WidgetKeys.TRIPS_IN_DAY_COUNT] = fetchedTrip.first
+                            }
+                        }
                         trip = fetchedTrip
                     }
                 } catch (e: Exception) {
@@ -105,6 +122,7 @@ class MyAppWidget : GlanceAppWidget() {
                     onPrevAction = actionRunCallback<PrevTripAction>(),
                     onNextAction = actionRunCallback<NextTripAction>(),
                     onLineClickAction = actionStartActivity(configIntent),
+                    //onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
                     stopIdToHighlight = null,
                     stopTypeToHighlight = null,
                 )
@@ -255,6 +273,7 @@ fun MyWidgetPreview() {
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),
             onLineClickAction = actionStartActivity<MainActivity>(),
+            //onDirectionClickAction = actionStartActivity<MainActivity>(),
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
         )

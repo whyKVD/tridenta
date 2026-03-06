@@ -5,12 +5,14 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import org.stypox.tridenta.db.LineDao
 import org.stypox.tridenta.db.StopDao
+import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.repo.LineTripsRepository
 import org.stypox.tridenta.repo.LinesRepository
@@ -35,14 +37,11 @@ class NextTripAction : ActionCallback {
         val hiltEntryPoint = EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
         val tripsRepo = hiltEntryPoint.lineTripsRepository()
 
-        /*// 1. Read current state (tripIndex) from Glance Preferences
+        // 1. Read current state (tripIndex) from Glance Preferences
         updateAppWidgetState(context, glanceId) { prefs ->
             val currentIndex = prefs[WidgetKeys.TRIP_INDEX] ?: 0
+            // TODO: Actually retrive the next index for the given trip
             val nextIndex = currentIndex + 1
-
-            // 2. Fetch the new data from your repository
-            // (Translating your loadIndexAsync logic here)
-            val nextTrip = tripsRepo.getUiTrip() // Use your repo logic
 
             // 3. Update the state in preferences
             prefs[WidgetKeys.TRIP_INDEX] = nextIndex
@@ -50,7 +49,7 @@ class NextTripAction : ActionCallback {
         }
 
         // 4. Force the widget to redraw with the new state
-        MyAppWidget().update(context, glanceId)*/
+        MyAppWidget().updateAll(context)
         logInfo("NextTripAction performed")
     }
 }
@@ -77,7 +76,7 @@ class PrevTripAction : ActionCallback {
 // 4. Refactor: onReload() -> ReloadTripAction
 class ReloadTripAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        // Handle reload logic, fetch fresh data, and update Widget
+        MyAppWidget().updateAll(context)
     }
 }
 
@@ -85,5 +84,15 @@ class ReloadTripAction : ActionCallback {
 class ToggleDirectionAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         // Read current direction from prefs, toggle it, fetch new trip, update prefs
+        updateAppWidgetState(context,glanceId) { prefs ->
+            val actualDirectionFilter = prefs[WidgetKeys.DIRECTION_FILTER]
+            val newDirectionFilter = when (Direction.valueOf(actualDirectionFilter ?: Direction.ForwardAndBackward.name)) {
+                Direction.Forward -> Direction.Backward
+                Direction.Backward -> Direction.ForwardAndBackward
+                Direction.ForwardAndBackward -> Direction.Forward
+            }
+            prefs[WidgetKeys.DIRECTION_FILTER] = newDirectionFilter.name
+        }
+        MyAppWidget().updateAll(context)
     }
 }

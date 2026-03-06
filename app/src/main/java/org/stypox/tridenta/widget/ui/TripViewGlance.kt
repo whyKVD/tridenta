@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.Button
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
@@ -59,6 +60,7 @@ fun TripViewGlance(
     onPrevAction: Action,
     onNextAction: Action,
     onLineClickAction: Action,
+    //onDirectionClickAction: Action,
     stopIdToHighlight: Int?,
     stopTypeToHighlight: StopLineType?,
     modifier: GlanceModifier = GlanceModifier
@@ -77,6 +79,7 @@ fun TripViewGlance(
                 TripViewTopRowGlance(
                     trip = trip,
                     onLineClickAction = onLineClickAction,
+                    //onDirectionClickAction = onDirectionClickAction,
                     modifier = GlanceModifier.padding(
                         start = 12.dp,
                         top = 4.dp,
@@ -155,9 +158,36 @@ fun TripViewGlance(
 }
 
 @Composable
+fun DirectionIconGlance(
+    direction: Direction,
+    context: Context,
+    modifier: GlanceModifier = GlanceModifier
+) {
+    Image(
+        provider = ImageProvider(
+            when (direction) {
+                Direction.Forward -> R.drawable.turn_sharp_right
+                Direction.Backward -> R.drawable.u_turn_left
+                Direction.ForwardAndBackward -> R.drawable.swap_calls
+            }
+        ),
+        contentDescription = context.getString(
+            when (direction) {
+                Direction.Forward -> R.string.forward
+                Direction.Backward -> R.string.backward
+                Direction.ForwardAndBackward -> R.string.forward_and_backward
+            }
+        ),
+        colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
+        modifier = modifier
+    )
+}
+
+@Composable
 private fun TripViewTopRowGlance(
     trip: UiTrip,
     onLineClickAction: Action,
+    //onDirectionClickAction: Action,
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
@@ -169,6 +199,7 @@ private fun TripViewTopRowGlance(
         if (trip.line != null) {
             // Replaced Surface with Box + background
             val shortNameBackground = trip.line.color.toLineColor()
+            val textColor = textColorOnBackground(shortNameBackground)
             Box(
                 modifier = GlanceModifier
                     .background(shortNameBackground) // Use a theme color instead of dynamic custom color for simplicity in Glance
@@ -179,7 +210,7 @@ private fun TripViewTopRowGlance(
                     text = trip.line.shortName,
                     maxLines = 1,
                     style = TextStyle(
-                        color = ColorProvider(textColorOnBackground(shortNameBackground)),
+                        color = ColorProvider(textColor),
                         fontWeight = FontWeight.Bold
                     )
                 )
@@ -207,17 +238,21 @@ private fun TripViewTopRowGlance(
                     ?: context.getString(R.string.no_date_time_information)
             } else {
                 if (trip.delay < 0)
-                    context.getString(R.string.early, formatDurationMinutes(context,-trip.delay))
+                    context.getString(R.string.early, formatDurationMinutes(context, -trip.delay))
                 else if (trip.delay == 0)
                     context.getString(R.string.on_time)
                 else
-                    context.getString(R.string.late, formatDurationMinutes(context,trip.delay))
+                    context.getString(R.string.late, formatDurationMinutes(context, trip.delay))
             }
             Text(
                 text = dateOrDelayText,
                 maxLines = 1,
                 style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant)
             )
+        }
+
+        Column {
+            DirectionIconGlance(trip.direction, context)
         }
     }
 }
@@ -404,7 +439,8 @@ private fun TripViewPreview() {
             onReloadAction = actionStartActivity<MainActivity>(),
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),
-            onLineClickAction = actionStartActivity<MainActivity>()
+            onLineClickAction = actionStartActivity<MainActivity>(),
+            //onDirectionClickAction = actionStartActivity<MainActivity>(),
         )
     }
 }
@@ -424,7 +460,8 @@ private fun TripViewPreviewLoading() {
             onReloadAction = actionStartActivity<MainActivity>(),
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),
-            onLineClickAction = actionStartActivity<MainActivity>()
+            onLineClickAction = actionStartActivity<MainActivity>(),
+            //onDirectionClickAction = actionStartActivity<MainActivity>()
         )
     }
 }

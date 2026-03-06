@@ -27,6 +27,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.stypox.tridenta.db.data.DbLine
+import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.ui.lines.LineItem
 import org.stypox.tridenta.ui.lines.LinesViewModel
 import org.stypox.tridenta.ui.theme.TitleText
@@ -95,6 +96,8 @@ class WidgetConfigurationActivity:
                 prefs[WidgetKeys.LINE_ID] = line.lineId
                 prefs[WidgetKeys.LINE_TYPE] = line.type.name
                 prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] = true
+                prefs[WidgetKeys.DIRECTION_FILTER] = Direction.ForwardAndBackward.name
+                prefs[WidgetKeys.IS_LOADING] = true
             }
             MyAppWidget().updateAll(this@WidgetConfigurationActivity)
 
