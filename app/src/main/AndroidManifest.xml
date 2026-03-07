@@ -46,9 +46,6 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
-        <receiver
-            android:name=".widget.IntentNextTripActionReceiver"
-            android:exported="false" />
         <receiver android:name=".widget.MyAppWidgetReceiver"
             android:exported="true">
             <intent-filter>
