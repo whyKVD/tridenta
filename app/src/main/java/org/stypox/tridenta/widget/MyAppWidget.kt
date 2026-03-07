@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
@@ -68,53 +69,85 @@ class MyAppWidget : GlanceAppWidget() {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
             }
             var trip by remember { mutableStateOf<UiTrip?>(null) }
-            var isError by remember { mutableStateOf(false) }
-            var isLoading by remember { mutableStateOf(prefs[WidgetKeys.IS_LOADING] ?: true) }
+            var isError = false
+            var isLoading by remember { mutableStateOf(true) }
             var directionFilter by remember {
                 mutableStateOf(
-                    prefs[WidgetKeys.DIRECTION_FILTER] ?: Direction.ForwardAndBackward.name
+                    Direction.ForwardAndBackward.name
                 )
             }
+            val storedDirectionFilter = prefs[WidgetKeys.DIRECTION_FILTER]
+            if (storedDirectionFilter != null) directionFilter = storedDirectionFilter
             val lineId = prefs[WidgetKeys.LINE_ID]
-            val isInitalDataLoaded = prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] ?: false
-            logInfo("lineId: ${lineId.toString()}")
             val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
             val tripIndex = prefs[WidgetKeys.TRIP_INDEX]
-            logInfo("lineType: ${lineTypeString ?: "null"}")
-            LaunchedEffect(lineId, lineTypeString) {
+            val prevTripIndex = prefs[WidgetKeys.PREV_TRIP_INDEX]
+            val refreshTimestamp = prefs[WidgetKeys.REFRESH_TIMESTAMP] ?: 0L
+            val hiltEntryPoint =
+                EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+            val tripsRepository = hiltEntryPoint.lineTripsRepository()
+            LaunchedEffect(lineId, lineTypeString, directionFilter, tripIndex) {
                 if (lineId == null || lineTypeString == null) {
                     return@LaunchedEffect
                 }
                 try {
-                    val hiltEntryPoint =
-                        EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
-                    val tripsRepository = hiltEntryPoint.lineTripsRepository()
-
                     if (tripIndex == null) {
-                        withContext(Dispatchers.IO) {
-                            updateAppWidgetState(context, id) { prefs ->
-                                val fetchedTrip = tripsRepository.getUiTrip(
-                                    lineId,
-                                    StopLineType.valueOf(lineTypeString),
-                                    ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
-                                    Direction.valueOf(directionFilter)
-                                )
-                                prefs[WidgetKeys.TRIP_INDEX] = fetchedTrip.second
-                                prefs[WidgetKeys.TRIPS_IN_DAY_COUNT] = fetchedTrip.first
-                                trip = fetchedTrip.third
-                            }
+                        val fetchedTrip = withContext(Dispatchers.IO) {
+                            tripsRepository.getUiTrip(
+                                lineId,
+                                StopLineType.valueOf(lineTypeString),
+                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
+                                Direction.valueOf(directionFilter)
+                            )
+                        }
+                        trip = fetchedTrip.third
+                        updateAppWidgetState(context, id) { prefs ->
+                            prefs[WidgetKeys.TRIP_INDEX] = fetchedTrip.second
+                            prefs[WidgetKeys.TRIPS_IN_DAY_COUNT] = fetchedTrip.first
+                            prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] = true
                         }
                         return@LaunchedEffect
                     }
-                    withContext(Dispatchers.IO) {
-                        updateAppWidgetState(context, id) { prefs ->
-                            val (fetchedTrip, _) = tripsRepository.getUiTrip(
+                    if (Direction.valueOf(directionFilter) == Direction.ForwardAndBackward) {
+                        val (fetchedTrip, network) = withContext(Dispatchers.IO) {
+                            tripsRepository.getUiTrip(
                                 lineId,
                                 StopLineType.valueOf(lineTypeString),
                                 ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
                                 tripIndex
                             )
-                            trip = fetchedTrip
+                        }
+                        trip = fetchedTrip
+                        if (!network) {
+                            updateAppWidgetState(context,id){
+                                prefs -> prefs[WidgetKeys.REFRESH_TIMESTAMP] = System.currentTimeMillis()
+                            }
+                        }
+                    } else {
+                        if (prevTripIndex == null) {
+                            throw Error("PrevTripIndex cannot be null")
+                        }
+                        val data = withContext(Dispatchers.IO) {
+                            tripsRepository.getUiTripWithDirection(
+                                lineId,
+                                StopLineType.valueOf(lineTypeString),
+                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
+                                Direction.valueOf(directionFilter),
+                                tripIndex,
+                                prevTripIndex
+                            )
+                        }
+                        if (data == null) {
+                            throw Error("data cannot be null")
+                        }
+                        trip = data.first
+                        if (!data.third) {
+                            updateAppWidgetState(context,id){
+                                    prefs -> prefs[WidgetKeys.REFRESH_TIMESTAMP] = System.currentTimeMillis()
+                            }
+                        }
+                        updateAppWidgetState(context, id) { prefs ->
+                            prefs[WidgetKeys.TRIP_INDEX] = data.second
                         }
                     }
                 } catch (e: Exception) {
@@ -124,9 +157,29 @@ class MyAppWidget : GlanceAppWidget() {
                     isLoading = false
                 }
             }
+            LaunchedEffect(refreshTimestamp) {
+                if (trip == null || tripIndex == null) return@LaunchedEffect
+                isLoading = true
+                try {
+                    val freshTrip = withContext(Dispatchers.IO) {
+                        tripsRepository.reloadUiTrip(
+                            trip!!,
+                            tripIndex,
+                            ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+                        )
+                    }
+
+                    trip = freshTrip
+                } catch (e: Exception) {
+                    logError(e.message!!, e.cause)
+                } finally {
+                    isLoading = false
+                }
+            }
+            logInfo("Loading: $isLoading")
             GlanceTheme {
                 TripViewGlance(
-                    trip, error = isError, loading = isLoading && isInitalDataLoaded,
+                    trip, error = isError, loading = isLoading, /*&& isInitalDataLoaded*/
                     onReloadAction = actionRunCallback<ReloadTripAction>(),
                     onPrevAction = actionRunCallback<PrevTripAction>(),
                     onNextAction = actionRunCallback<NextTripAction>(),

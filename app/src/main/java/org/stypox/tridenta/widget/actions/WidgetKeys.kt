@@ -4,14 +4,16 @@ import android.content.Context
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 
 object WidgetKeys {
+    val REFRESH_TIMESTAMP = longPreferencesKey("refresh_timestamp")
     val TRIP_INDEX = intPreferencesKey("trip_index")
     val LINE_ID = intPreferencesKey("line_id")
     val TRIPS_IN_DAY_COUNT = intPreferencesKey("trips_in_day_count")
-    val CURRENT_TRIP_ID = intPreferencesKey("current_trip_id")
+    val PREV_TRIP_INDEX = intPreferencesKey("prev_trip_index")
 
     // Save booleans
     val IS_LOADING = booleanPreferencesKey("is_loading")

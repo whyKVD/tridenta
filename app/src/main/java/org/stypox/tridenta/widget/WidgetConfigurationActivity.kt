@@ -96,7 +96,6 @@ class WidgetConfigurationActivity :
                 prefs.clear()
                 prefs[WidgetKeys.LINE_ID] = line.lineId
                 prefs[WidgetKeys.LINE_TYPE] = line.type.name
-                prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] = true
                 prefs[WidgetKeys.DIRECTION_FILTER] = Direction.ForwardAndBackward.name
                 prefs[WidgetKeys.IS_LOADING] = true
             }

@@ -8,21 +8,12 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.appwidget.updateAll
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
 import org.stypox.tridenta.db.LineDao
 import org.stypox.tridenta.enums.Direction
-import org.stypox.tridenta.enums.StopLineType
-import org.stypox.tridenta.extractor.ROME_ZONE_ID
-import org.stypox.tridenta.log.logError
 import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.repo.LineTripsRepository
-import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.widget.MyAppWidget
-import java.time.ZonedDateTime
 
 // 1. Create a Hilt Entry point to access your Repositories inside Glance Actions
 @EntryPoint
@@ -48,6 +39,7 @@ class NextTripAction : ActionCallback {
                 return@updateAppWidgetState
             }
 
+            prefs[WidgetKeys.PREV_TRIP_INDEX] = currentIndex
             prefs[WidgetKeys.TRIP_INDEX] = nextIndex
         }
 
@@ -71,6 +63,7 @@ class PrevTripAction : ActionCallback {
                 return@updateAppWidgetState
             }
 
+            prefs[WidgetKeys.PREV_TRIP_INDEX] = currentIndex
             prefs[WidgetKeys.TRIP_INDEX] = nextIndex
         }
 
@@ -86,6 +79,9 @@ class ReloadTripAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
+        updateAppWidgetState(context, glanceId) { prefs ->
+            prefs[WidgetKeys.REFRESH_TIMESTAMP] = System.currentTimeMillis()
+        }
         MyAppWidget().updateAll(context)
     }
 }
