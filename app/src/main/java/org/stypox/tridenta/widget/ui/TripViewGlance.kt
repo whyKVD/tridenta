@@ -19,10 +19,13 @@ import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.preview.ExperimentalGlancePreviewApi
 import androidx.glance.preview.Preview
 import androidx.glance.text.FontWeight
@@ -42,6 +45,7 @@ import org.stypox.tridenta.ui.MainActivity
 import org.stypox.tridenta.util.formatDateFull
 import org.stypox.tridenta.util.textColorOnBackground
 import org.stypox.tridenta.util.toLineColor
+import org.stypox.tridenta.widget.theme.SmallCircularProgressIndicatorGlance
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -68,7 +72,7 @@ fun TripViewGlance(
     val context = LocalContext.current
 
     Box(
-        modifier = modifier.fillMaxSize().background(GlanceTheme.colors.background),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         if (trip != null) {
@@ -272,22 +276,27 @@ private fun TripViewBottomRowGlance(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
-            .background(GlanceTheme.colors.surfaceVariant)
             .padding(16.dp)
     ) {
         Image(
             provider = ImageProvider(R.drawable.arrow_left),
             contentDescription = context.getString(R.string.previous),
             modifier = GlanceModifier.clickable(onPrevAction).defaultWeight()
+                .height(32.dp)
+                .background(GlanceTheme.colors.primary)
         )
 
         if (loading) {
-            CircularProgressIndicator(modifier = GlanceModifier.defaultWeight())
+            SmallCircularProgressIndicatorGlance(modifier = GlanceModifier.defaultWeight()
+                .height(32.dp)
+                .background(GlanceTheme.colors.primary))
         } else {
             Image(
                 provider = ImageProvider(R.drawable.refresh),
                 contentDescription = context.getString(R.string.reload),
                 modifier = GlanceModifier.clickable(onReloadAction).defaultWeight()
+                    .height(32.dp)
+                    .background(GlanceTheme.colors.primary)
             )
         }
 
@@ -295,6 +304,8 @@ private fun TripViewBottomRowGlance(
             provider = ImageProvider(R.drawable.arrow_right),
             contentDescription = context.getString(R.string.next),
             modifier = GlanceModifier.clickable(onNextAction).defaultWeight()
+                .height(32.dp)
+                .background(GlanceTheme.colors.primary)
         )
     }
 }

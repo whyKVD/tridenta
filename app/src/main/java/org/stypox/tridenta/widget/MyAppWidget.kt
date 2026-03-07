@@ -35,14 +35,17 @@ import org.stypox.tridenta.enums.StopLineType
 import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.log.logError
 import org.stypox.tridenta.log.logInfo
+import org.stypox.tridenta.repo.data.UiLine
 import org.stypox.tridenta.repo.data.UiStopTime
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.ui.MainActivity
 import org.stypox.tridenta.widget.actions.NextTripAction
 import org.stypox.tridenta.widget.actions.PrevTripAction
 import org.stypox.tridenta.widget.actions.ReloadTripAction
+import org.stypox.tridenta.widget.actions.ToggleDirectionAction
 import org.stypox.tridenta.widget.actions.WidgetEntryPoint
 import org.stypox.tridenta.widget.actions.WidgetKeys
+import org.stypox.tridenta.widget.ui.LineTripsWidgetScreen
 import org.stypox.tridenta.widget.ui.TripViewGlance
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -67,6 +70,8 @@ class MyAppWidget : GlanceAppWidget() {
                 // These flags ensure the activity opens properly from the launcher context
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
             }
+            var isFavorite by remember { mutableStateOf(false) }
+            var line by remember { mutableStateOf<UiLine?>(null) }
             var trip by remember { mutableStateOf<UiTrip?>(null) }
             var isError = false
             var isLoading by remember { mutableStateOf(true) }
@@ -80,12 +85,28 @@ class MyAppWidget : GlanceAppWidget() {
             val lineId = prefs[WidgetKeys.LINE_ID]
             val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
             val tripIndex = prefs[WidgetKeys.TRIP_INDEX]
-            val prevTripIndex = prefs[WidgetKeys.PREV_TRIP_INDEX]
+            var prevTripIndex = prefs[WidgetKeys.PREV_TRIP_INDEX]
             val refreshTimestamp = prefs[WidgetKeys.REFRESH_TIMESTAMP] ?: 0L
             val hiltEntryPoint =
                 EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
             val tripsRepository = hiltEntryPoint.lineTripsRepository()
-            LaunchedEffect(lineId, lineTypeString, directionFilter, tripIndex) {
+            val linesRepository = hiltEntryPoint.lineRepository()
+            LaunchedEffect(lineId, lineTypeString) {
+                if (lineId == null || lineTypeString == null) {
+                    return@LaunchedEffect
+                }
+                try {
+                    val fetchedLine = withContext(Dispatchers.IO) {
+                        linesRepository.getUiLine(lineId, StopLineType.valueOf(lineTypeString))
+                    }
+
+                    line = fetchedLine
+                    line?.let { isFavorite = it.isFavorite }
+                } catch (e: Exception) {
+                    logError(e.message!!, e.cause)
+                }
+            }
+            LaunchedEffect(lineId, directionFilter, tripIndex) {
                 if (lineId == null || lineTypeString == null) {
                     return@LaunchedEffect
                 }
@@ -137,7 +158,7 @@ class MyAppWidget : GlanceAppWidget() {
                         }
                     } else {
                         if (prevTripIndex == null) {
-                            throw Error("PrevTripIndex cannot be null")
+                            prevTripIndex = tripIndex
                         }
                         val data = withContext(Dispatchers.IO) {
                             tripsRepository.getUiTripWithDirection(
@@ -205,8 +226,23 @@ class MyAppWidget : GlanceAppWidget() {
             logInfo("tripIndex: $tripIndex")
             logInfo("prevTripIndex: $prevTripIndex")
             GlanceTheme {
-                TripViewGlance(
-                    trip, error = isError, loading = isLoading, /*&& isInitalDataLoaded*/
+                LineTripsWidgetScreen(
+                    line = line,
+                    trip = trip, error = isError, loading = isLoading,
+                    onReloadAction = actionRunCallback<ReloadTripAction>(),
+                    onPrevAction = actionRunCallback<PrevTripAction>(),
+                    onNextAction = actionRunCallback<NextTripAction>(),
+                    onLineClickAction = actionStartActivity(configIntent),
+                    directionFilter = Direction.valueOf(directionFilter),
+                    onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
+                    stopIdToHighlight = null,
+                    stopTypeToHighlight = null,
+                    prevEnabled = true,
+                    nextEnabled = true,
+                    isFavorite = isFavorite
+                )
+                /*TripViewGlance(
+                    trip, error = isError, loading = isLoading,
                     onReloadAction = actionRunCallback<ReloadTripAction>(),
                     onPrevAction = actionRunCallback<PrevTripAction>(),
                     onNextAction = actionRunCallback<NextTripAction>(),
@@ -214,7 +250,7 @@ class MyAppWidget : GlanceAppWidget() {
                     //onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
                     stopIdToHighlight = null,
                     stopTypeToHighlight = null,
-                )
+                )*/
             }
         }
     }

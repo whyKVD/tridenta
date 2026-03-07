@@ -13,6 +13,7 @@ import org.stypox.tridenta.db.LineDao
 import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.repo.LineTripsRepository
+import org.stypox.tridenta.repo.LinesRepository
 import org.stypox.tridenta.widget.MyAppWidget
 
 // 1. Create a Hilt Entry point to access your Repositories inside Glance Actions
@@ -20,7 +21,7 @@ import org.stypox.tridenta.widget.MyAppWidget
 @InstallIn(SingletonComponent::class)
 interface WidgetEntryPoint {
     fun lineTripsRepository(): LineTripsRepository
-    fun lineDao(): LineDao
+    fun lineRepository(): LinesRepository
     // Add HistoryDao and LinesRepository here too
 }
 
@@ -106,5 +107,15 @@ class ToggleDirectionAction : ActionCallback {
             prefs[WidgetKeys.DIRECTION_FILTER] = newDirectionFilter.name
         }
         MyAppWidget().updateAll(context)
+    }
+}
+
+class ToggleFavoriteAction: ActionCallback{
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        TODO("Not yet implemented")
     }
 }

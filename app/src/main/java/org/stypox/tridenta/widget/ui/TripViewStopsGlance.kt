@@ -22,7 +22,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
 import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
@@ -93,7 +92,7 @@ fun TripViewStopsGlance(
 
         item {
             // space for FABs
-            Spacer(modifier = GlanceModifier.size(height = 84.dp, width = 0.dp))
+            Spacer(modifier = GlanceModifier.size(height = 64.dp, width = 0.dp))
         }
     }
 }
@@ -130,7 +129,7 @@ private fun TripViewStopItemGlance(
 
         if (stopTime.stop?.isFavorite == true) {
             Image(
-                provider = ImageProvider(R.drawable.favorite),
+                provider = ImageProvider(R.drawable.favorite_filled),
                 contentDescription = context.getString(R.string.favorite),
                 colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
                 modifier = GlanceModifier.padding(end = 3.dp)
