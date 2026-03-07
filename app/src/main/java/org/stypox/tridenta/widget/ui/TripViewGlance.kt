@@ -446,7 +446,7 @@ private fun TripViewPreview() {
 }
 
 @OptIn(ExperimentalGlancePreviewApi::class)
-@Preview()
+@Preview
 @Composable
 private fun TripViewPreviewLoading() {
     val loading = true

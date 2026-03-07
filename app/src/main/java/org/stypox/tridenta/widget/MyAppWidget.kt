@@ -8,7 +8,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
@@ -119,8 +118,21 @@ class MyAppWidget : GlanceAppWidget() {
                         }
                         trip = fetchedTrip
                         if (!network) {
-                            updateAppWidgetState(context,id){
-                                prefs -> prefs[WidgetKeys.REFRESH_TIMESTAMP] = System.currentTimeMillis()
+                            isLoading = true
+                            try {
+                                val freshTrip = withContext(Dispatchers.IO) {
+                                    tripsRepository.reloadUiTrip(
+                                        trip!!,
+                                        tripIndex,
+                                        ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+                                    )
+                                }
+
+                                trip = freshTrip
+                            } catch (e: Exception) {
+                                logError(e.message!!, e.cause)
+                            } finally {
+                                isLoading = false
                             }
                         }
                     } else {
@@ -142,8 +154,21 @@ class MyAppWidget : GlanceAppWidget() {
                         }
                         trip = data.first
                         if (!data.third) {
-                            updateAppWidgetState(context,id){
-                                    prefs -> prefs[WidgetKeys.REFRESH_TIMESTAMP] = System.currentTimeMillis()
+                            isLoading = true
+                            try {
+                                val freshTrip = withContext(Dispatchers.IO) {
+                                    tripsRepository.reloadUiTrip(
+                                        trip!!,
+                                        tripIndex,
+                                        ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+                                    )
+                                }
+
+                                trip = freshTrip
+                            } catch (e: Exception) {
+                                logError(e.message!!, e.cause)
+                            } finally {
+                                isLoading = false
                             }
                         }
                         updateAppWidgetState(context, id) { prefs ->
@@ -158,8 +183,9 @@ class MyAppWidget : GlanceAppWidget() {
                 }
             }
             LaunchedEffect(refreshTimestamp) {
-                if (trip == null || tripIndex == null) return@LaunchedEffect
+                if (refreshTimestamp == 0L || trip == null || tripIndex == null) return@LaunchedEffect
                 isLoading = true
+                logInfo("Performed refresh")
                 try {
                     val freshTrip = withContext(Dispatchers.IO) {
                         tripsRepository.reloadUiTrip(
@@ -176,7 +202,8 @@ class MyAppWidget : GlanceAppWidget() {
                     isLoading = false
                 }
             }
-            logInfo("Loading: $isLoading")
+            logInfo("tripIndex: $tripIndex")
+            logInfo("prevTripIndex: $prevTripIndex")
             GlanceTheme {
                 TripViewGlance(
                     trip, error = isError, loading = isLoading, /*&& isInitalDataLoaded*/

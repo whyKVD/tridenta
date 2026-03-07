@@ -1,12 +1,9 @@
 package org.stypox.tridenta.widget.actions
 
-import android.content.Context
-import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.glance.GlanceId
 
 object WidgetKeys {
     val REFRESH_TIMESTAMP = longPreferencesKey("refresh_timestamp")
