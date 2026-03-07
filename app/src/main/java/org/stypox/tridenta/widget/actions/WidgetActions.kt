@@ -9,7 +9,6 @@ import androidx.glance.appwidget.updateAll
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import org.stypox.tridenta.db.LineDao
 import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.repo.LineTripsRepository
@@ -107,15 +106,5 @@ class ToggleDirectionAction : ActionCallback {
             prefs[WidgetKeys.DIRECTION_FILTER] = newDirectionFilter.name
         }
         MyAppWidget().updateAll(context)
-    }
-}
-
-class ToggleFavoriteAction: ActionCallback{
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
-        TODO("Not yet implemented")
     }
 }

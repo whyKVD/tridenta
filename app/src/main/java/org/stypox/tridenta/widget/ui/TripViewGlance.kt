@@ -14,16 +14,16 @@ import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.CircularProgressIndicator
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
-import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
-import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.preview.ExperimentalGlancePreviewApi
@@ -45,7 +45,6 @@ import org.stypox.tridenta.ui.MainActivity
 import org.stypox.tridenta.util.formatDateFull
 import org.stypox.tridenta.util.textColorOnBackground
 import org.stypox.tridenta.util.toLineColor
-import org.stypox.tridenta.widget.theme.SmallCircularProgressIndicatorGlance
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -276,37 +275,62 @@ private fun TripViewBottomRowGlance(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
+            .background(GlanceTheme.colors.widgetBackground)
             .padding(16.dp)
     ) {
-        Image(
-            provider = ImageProvider(R.drawable.arrow_left),
-            contentDescription = context.getString(R.string.previous),
-            modifier = GlanceModifier.clickable(onPrevAction).defaultWeight()
-                .height(32.dp)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = GlanceModifier.clickable(onPrevAction)
+                .size(48.dp)
+                .cornerRadius(12.dp)
                 .background(GlanceTheme.colors.primary)
-        )
-
-        if (loading) {
-            SmallCircularProgressIndicatorGlance(modifier = GlanceModifier.defaultWeight()
-                .height(32.dp)
-                .background(GlanceTheme.colors.primary))
-        } else {
+        ) {
             Image(
-                provider = ImageProvider(R.drawable.refresh),
-                contentDescription = context.getString(R.string.reload),
-                modifier = GlanceModifier.clickable(onReloadAction).defaultWeight()
-                    .height(32.dp)
-                    .background(GlanceTheme.colors.primary)
+                provider = ImageProvider(R.drawable.arrow_left),
+                contentDescription = context.getString(R.string.previous),
+                modifier = GlanceModifier
+                    .size(32.dp)
             )
         }
+        Spacer(GlanceModifier.defaultWeight())
 
-        Image(
-            provider = ImageProvider(R.drawable.arrow_right),
-            contentDescription = context.getString(R.string.next),
-            modifier = GlanceModifier.clickable(onNextAction).defaultWeight()
-                .height(32.dp)
+
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = GlanceModifier.clickable(onReloadAction)
+                .size(48.dp)
+                .cornerRadius(12.dp)
                 .background(GlanceTheme.colors.primary)
-        )
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = GlanceModifier.defaultWeight()
+                        .size(24.dp)
+                )
+            } else {
+                Image(
+                    provider = ImageProvider(R.drawable.refresh),
+                    contentDescription = context.getString(R.string.reload),
+                    modifier = GlanceModifier
+                        .size(24.dp)
+                )
+            }
+        }
+        Spacer(GlanceModifier.defaultWeight())
+
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = GlanceModifier.clickable(onNextAction)
+                .size(48.dp)
+                .cornerRadius(12.dp)
+                .background(GlanceTheme.colors.primary)
+        ) {
+            Image(
+                provider = ImageProvider(R.drawable.arrow_right),
+                contentDescription = context.getString(R.string.next),
+                GlanceModifier.size(32.dp)
+            )
+        }
     }
 }
 
