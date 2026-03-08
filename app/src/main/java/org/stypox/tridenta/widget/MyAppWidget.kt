@@ -35,6 +35,8 @@ import org.stypox.tridenta.enums.StopLineType
 import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.log.logError
 import org.stypox.tridenta.log.logInfo
+import org.stypox.tridenta.repo.LineTripsRepository
+import org.stypox.tridenta.repo.LinesRepository
 import org.stypox.tridenta.repo.data.UiLine
 import org.stypox.tridenta.repo.data.UiStopTime
 import org.stypox.tridenta.repo.data.UiTrip
@@ -53,51 +55,61 @@ import java.time.ZonedDateTime
 
 class MyAppWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
+    private lateinit var tripsRepository: LineTripsRepository
+    private lateinit var linesRepository: LinesRepository
+    private lateinit var referenceDateTime: ZonedDateTime
+
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId
     ) {
-        // In this method, load data needed to render the AppWidget.
-        // Use `withContext` to switch to another thread for long running
-        // operations.
+        val hiltEntryPoint =
+            EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+        tripsRepository = hiltEntryPoint.lineTripsRepository()
+        linesRepository = hiltEntryPoint.lineRepository()
+        referenceDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
 
+        val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+        val configIntent = Intent(context, WidgetConfigurationActivity::class.java).apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+        }
         provideContent {
             val prefs = currentState<Preferences>()
-            val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-            val configIntent = Intent(context, WidgetConfigurationActivity::class.java).apply {
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-
-                // These flags ensure the activity opens properly from the launcher context
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
-            }
             var isFavorite by remember { mutableStateOf(false) }
             var line by remember { mutableStateOf<UiLine?>(null) }
-            var trip by remember { mutableStateOf<UiTrip?>(null) }
+            val (trip, setTrip) = remember { mutableStateOf<UiTrip?>(null) }
             var isError = false
-            var isLoading by remember { mutableStateOf(true) }
+            val (isLoading, setIsLoading) = remember { mutableStateOf(true) }
             var directionFilter by remember {
                 mutableStateOf(
-                    Direction.ForwardAndBackward.name
+                    Direction.ForwardAndBackward
                 )
             }
+            var lineType by remember { mutableStateOf(StopLineType.Urban) }
+            var prevEnabled by remember { mutableStateOf(true) }
+            var nextEnabled by remember { mutableStateOf(true) }
+
             val storedDirectionFilter = prefs[WidgetKeys.DIRECTION_FILTER]
-            if (storedDirectionFilter != null) directionFilter = storedDirectionFilter
+            if (storedDirectionFilter != null) directionFilter =
+                Direction.valueOf(storedDirectionFilter)
             val lineId = prefs[WidgetKeys.LINE_ID]
             val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
+            if (lineTypeString != null) lineType = StopLineType.valueOf(lineTypeString)
             val tripIndex = prefs[WidgetKeys.TRIP_INDEX]
             var prevTripIndex = prefs[WidgetKeys.PREV_TRIP_INDEX]
             val refreshTimestamp = prefs[WidgetKeys.REFRESH_TIMESTAMP] ?: 0L
-            val hiltEntryPoint =
-                EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
-            val tripsRepository = hiltEntryPoint.lineTripsRepository()
-            val linesRepository = hiltEntryPoint.lineRepository()
-            LaunchedEffect(lineId, lineTypeString) {
+            val prevEnabledStored = prefs[WidgetKeys.PREV_ENABLED]
+            if (prevEnabledStored != null) prevEnabled = prevEnabledStored
+            val nextEnabledStored = prefs[WidgetKeys.NEXT_ENABLED]
+            if (nextEnabledStored != null) nextEnabled = nextEnabledStored
+            LaunchedEffect(lineId, lineTypeString) { // retrieving line
                 if (lineId == null || lineTypeString == null) {
                     return@LaunchedEffect
                 }
                 try {
                     val fetchedLine = withContext(Dispatchers.IO) {
-                        linesRepository.getUiLine(lineId, StopLineType.valueOf(lineTypeString))
+                        linesRepository.getUiLine(lineId, lineType)
                     }
 
                     line = fetchedLine
@@ -106,7 +118,7 @@ class MyAppWidget : GlanceAppWidget() {
                     logError(e.message!!, e.cause)
                 }
             }
-            LaunchedEffect(lineId, directionFilter, tripIndex) {
+            LaunchedEffect(lineId, directionFilter, tripIndex) { // retrieving trip
                 if (lineId == null || lineTypeString == null) {
                     return@LaunchedEffect
                 }
@@ -115,12 +127,12 @@ class MyAppWidget : GlanceAppWidget() {
                         val fetchedTrip = withContext(Dispatchers.IO) {
                             tripsRepository.getUiTrip(
                                 lineId,
-                                StopLineType.valueOf(lineTypeString),
-                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
-                                Direction.valueOf(directionFilter)
+                                lineType,
+                                referenceDateTime,
+                                directionFilter
                             )
                         }
-                        trip = fetchedTrip.third
+                        setTrip(fetchedTrip.third)
                         updateAppWidgetState(context, id) { prefs ->
                             prefs[WidgetKeys.TRIP_INDEX] = fetchedTrip.second
                             prefs[WidgetKeys.TRIPS_IN_DAY_COUNT] = fetchedTrip.first
@@ -128,33 +140,18 @@ class MyAppWidget : GlanceAppWidget() {
                         }
                         return@LaunchedEffect
                     }
-                    if (Direction.valueOf(directionFilter) == Direction.ForwardAndBackward) {
+                    if (directionFilter == Direction.ForwardAndBackward) {
                         val (fetchedTrip, network) = withContext(Dispatchers.IO) {
                             tripsRepository.getUiTrip(
                                 lineId,
-                                StopLineType.valueOf(lineTypeString),
-                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
+                                lineType,
+                                referenceDateTime,
                                 tripIndex
                             )
                         }
-                        trip = fetchedTrip
+                        setTrip(fetchedTrip)
                         if (!network) {
-                            isLoading = true
-                            try {
-                                val freshTrip = withContext(Dispatchers.IO) {
-                                    tripsRepository.reloadUiTrip(
-                                        trip!!,
-                                        tripIndex,
-                                        ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
-                                    )
-                                }
-
-                                trip = freshTrip
-                            } catch (e: Exception) {
-                                logError(e.message!!, e.cause)
-                            } finally {
-                                isLoading = false
-                            }
+                            updateTrip(tripIndex, setIsLoading, fetchedTrip, setTrip)
                         }
                     } else {
                         if (prevTripIndex == null) {
@@ -163,68 +160,51 @@ class MyAppWidget : GlanceAppWidget() {
                         val data = withContext(Dispatchers.IO) {
                             tripsRepository.getUiTripWithDirection(
                                 lineId,
-                                StopLineType.valueOf(lineTypeString),
-                                ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID),
-                                Direction.valueOf(directionFilter),
+                                lineType,
+                                referenceDateTime,
+                                directionFilter,
                                 tripIndex,
                                 prevTripIndex
                             )
                         }
                         if (data == null) {
-                            throw Error("data cannot be null")
-                        }
-                        trip = data.first
-                        if (!data.third) {
-                            isLoading = true
-                            try {
-                                val freshTrip = withContext(Dispatchers.IO) {
-                                    tripsRepository.reloadUiTrip(
-                                        trip!!,
-                                        tripIndex,
-                                        ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
-                                    )
+                            updateAppWidgetState(context, id) { prefs ->
+                                prefs[WidgetKeys.TRIP_INDEX] = prevTripIndex
+                                if (tripIndex < prevTripIndex) {
+                                    prefs[WidgetKeys.PREV_ENABLED] = false
+                                    prevEnabled = false
                                 }
-
-                                trip = freshTrip
-                            } catch (e: Exception) {
-                                logError(e.message!!, e.cause)
-                            } finally {
-                                isLoading = false
+                                if (tripIndex > prevTripIndex) {
+                                    prefs[WidgetKeys.NEXT_ENABLED] = false
+                                    nextEnabled = false
+                                }
                             }
+                            return@LaunchedEffect
+                        }
+                        setTrip(data.first)
+                        if (!data.third) {
+                            updateTrip(tripIndex, setIsLoading, data.first, setTrip)
                         }
                         updateAppWidgetState(context, id) { prefs ->
                             prefs[WidgetKeys.TRIP_INDEX] = data.second
+                            prefs[WidgetKeys.PREV_TRIP_INDEX] = tripIndex
                         }
                     }
                 } catch (e: Exception) {
                     logError(e.message!!, e.cause)
                     isError = true
                 } finally {
-                    isLoading = false
+                    setIsLoading(false)
                 }
             }
-            LaunchedEffect(refreshTimestamp) {
-                if (refreshTimestamp == 0L || trip == null || tripIndex == null) return@LaunchedEffect
-                isLoading = true
-                logInfo("Performed refresh")
-                try {
-                    val freshTrip = withContext(Dispatchers.IO) {
-                        tripsRepository.reloadUiTrip(
-                            trip!!,
-                            tripIndex,
-                            ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
-                        )
-                    }
-
-                    trip = freshTrip
-                } catch (e: Exception) {
-                    logError(e.message!!, e.cause)
-                } finally {
-                    isLoading = false
-                }
+            LaunchedEffect(refreshTimestamp) { // updating trip
+                if (refreshTimestamp == 0L || tripIndex == null || trip == null) return@LaunchedEffect
+                updateTrip(tripIndex, setIsLoading, trip, setTrip)
             }
+            logInfo("${System.currentTimeMillis()}")
             logInfo("tripIndex: $tripIndex")
             logInfo("prevTripIndex: $prevTripIndex")
+            logInfo("directionFilter: $directionFilter")
             GlanceTheme {
                 LineTripsWidgetScreen(
                     line = line,
@@ -233,25 +213,39 @@ class MyAppWidget : GlanceAppWidget() {
                     onPrevAction = actionRunCallback<PrevTripAction>(),
                     onNextAction = actionRunCallback<NextTripAction>(),
                     onLineClickAction = actionStartActivity(configIntent),
-                    directionFilter = Direction.valueOf(directionFilter),
+                    directionFilter = directionFilter,
                     onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
                     stopIdToHighlight = null,
                     stopTypeToHighlight = null,
-                    prevEnabled = true,
-                    nextEnabled = true,
+                    prevEnabled = prevEnabled,
+                    nextEnabled = nextEnabled,
                     isFavorite = isFavorite
                 )
-                /*TripViewGlance(
-                    trip, error = isError, loading = isLoading,
-                    onReloadAction = actionRunCallback<ReloadTripAction>(),
-                    onPrevAction = actionRunCallback<PrevTripAction>(),
-                    onNextAction = actionRunCallback<NextTripAction>(),
-                    onLineClickAction = actionStartActivity(configIntent),
-                    //onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
-                    stopIdToHighlight = null,
-                    stopTypeToHighlight = null,
-                )*/
             }
+        }
+    }
+
+    private suspend fun updateTrip(
+        tripIndex: Int,
+        setIsLoading: (Boolean) -> Unit,
+        trip: UiTrip,
+        setTrip: (UiTrip) -> Unit
+    ) {
+        setIsLoading(true)
+        try {
+            val freshTrip = withContext(Dispatchers.IO) {
+                tripsRepository.reloadUiTrip(
+                    trip,
+                    tripIndex,
+                    referenceDateTime
+                )
+            }
+
+            setTrip(freshTrip)
+        } catch (e: Exception) {
+            logError(e.message!!, e.cause)
+        } finally {
+            setIsLoading(false)
         }
     }
 }
@@ -397,8 +391,8 @@ fun MyWidgetPreview() {
             onReloadAction = actionStartActivity<MainActivity>(),
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),
-            onLineClickAction = actionStartActivity<MainActivity>(),
-            //onDirectionClickAction = actionStartActivity<MainActivity>(),
+            prevEnabled = true,
+            nextEnabled = true,
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
         )

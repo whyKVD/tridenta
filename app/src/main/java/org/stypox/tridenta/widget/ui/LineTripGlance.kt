@@ -10,7 +10,6 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
@@ -68,7 +67,8 @@ fun LineTripsWidgetScreen(
             line = line,
             isFavorite = isFavorite,
             directionFilter = directionFilter,
-            onDirectionClickAction
+            onDirectionAction = onDirectionClickAction,
+            onLineClickAction = onLineClickAction,
         )
         TripViewGlance(
             trip = trip,
@@ -77,28 +77,28 @@ fun LineTripsWidgetScreen(
             onReloadAction = onReloadAction,
             onPrevAction = onPrevAction,
             onNextAction = onNextAction,
-            onLineClickAction = onLineClickAction,
+            prevEnabled = prevEnabled,
+            nextEnabled = nextEnabled,
             stopIdToHighlight = stopIdToHighlight,
             stopTypeToHighlight = stopTypeToHighlight
         )
     }
 }
 
-/**
- * Glance equivalent of LineAppBar.
- */
 @Composable
 fun WidgetAppBar(
     line: UiLine?,
     isFavorite: Boolean,
     directionFilter: Direction,
-    onDirectionAction: Action
+    onDirectionAction: Action,
+    onLineClickAction: Action,
 ) {
     val context = LocalContext.current
     // The main container Row
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
+            .clickable(onLineClickAction)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

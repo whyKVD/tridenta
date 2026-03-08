@@ -92,7 +92,7 @@ fun TripViewStopsGlance(
 
         item {
             // space for FABs
-            Spacer(modifier = GlanceModifier.size(height = 64.dp, width = 0.dp))
+            Spacer(modifier = GlanceModifier.size(height = 84.dp, width = 0.dp))
         }
     }
 }

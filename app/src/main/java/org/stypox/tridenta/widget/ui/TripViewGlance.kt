@@ -10,6 +10,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.Visibility
 import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -32,6 +33,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.glance.visibility
 import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
@@ -57,13 +59,11 @@ fun TripViewGlance(
     trip: UiTrip?,
     error: Boolean,
     loading: Boolean,
-    // Note: In Glance, clicks are handled by 'Action's (like actionRunCallback or actionStartActivity)
-    // rather than standard lambda functions, because they trigger background broadcasts.
     onReloadAction: Action,
     onPrevAction: Action,
     onNextAction: Action,
-    onLineClickAction: Action,
-    //onDirectionClickAction: Action,
+    prevEnabled: Boolean,
+    nextEnabled: Boolean,
     stopIdToHighlight: Int?,
     stopTypeToHighlight: StopLineType?,
     modifier: GlanceModifier = GlanceModifier
@@ -81,8 +81,6 @@ fun TripViewGlance(
             ) {
                 TripViewTopRowGlance(
                     trip = trip,
-                    onLineClickAction = onLineClickAction,
-                    //onDirectionClickAction = onDirectionClickAction,
                     modifier = GlanceModifier.padding(
                         start = 12.dp,
                         top = 4.dp,
@@ -154,6 +152,8 @@ fun TripViewGlance(
                 onReloadAction = onReloadAction,
                 onPrevAction = onPrevAction,
                 onNextAction = onNextAction,
+                prevEnabled = prevEnabled,
+                nextEnabled = nextEnabled,
                 modifier = GlanceModifier.fillMaxWidth()
             )
         }
@@ -189,8 +189,6 @@ fun DirectionIconGlance(
 @Composable
 private fun TripViewTopRowGlance(
     trip: UiTrip,
-    onLineClickAction: Action,
-    //onDirectionClickAction: Action,
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
@@ -205,9 +203,8 @@ private fun TripViewTopRowGlance(
             val textColor = textColorOnBackground(shortNameBackground)
             Box(
                 modifier = GlanceModifier
-                    .background(shortNameBackground) // Use a theme color instead of dynamic custom color for simplicity in Glance
+                    .background(shortNameBackground)
                     .padding(8.dp)
-                    .clickable(onLineClickAction)
             ) {
                 Text(
                     text = trip.line.shortName,
@@ -266,9 +263,14 @@ private fun TripViewBottomRowGlance(
     onReloadAction: Action,
     onPrevAction: Action,
     onNextAction: Action,
+    prevEnabled: Boolean,
+    nextEnabled: Boolean,
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
+    val buttonModifier = GlanceModifier.size(48.dp)
+        .cornerRadius(12.dp)
+        .background(GlanceTheme.colors.primary)
 
     // Widgets don't support FloatingActionButtons. Use standard Buttons or Images.
     Row(
@@ -280,10 +282,9 @@ private fun TripViewBottomRowGlance(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = GlanceModifier.clickable(onPrevAction)
-                .size(48.dp)
-                .cornerRadius(12.dp)
-                .background(GlanceTheme.colors.primary)
+            modifier = if (prevEnabled) buttonModifier.clickable(onPrevAction) else buttonModifier.visibility(
+                Visibility.Invisible
+            )
         ) {
             Image(
                 provider = ImageProvider(R.drawable.arrow_left),
@@ -297,10 +298,7 @@ private fun TripViewBottomRowGlance(
 
         Box(
             contentAlignment = Alignment.Center,
-            modifier = GlanceModifier.clickable(onReloadAction)
-                .size(48.dp)
-                .cornerRadius(12.dp)
-                .background(GlanceTheme.colors.primary)
+            modifier = buttonModifier.clickable(onReloadAction)
         ) {
             if (loading) {
                 CircularProgressIndicator(
@@ -320,10 +318,9 @@ private fun TripViewBottomRowGlance(
 
         Box(
             contentAlignment = Alignment.Center,
-            modifier = GlanceModifier.clickable(onNextAction)
-                .size(48.dp)
-                .cornerRadius(12.dp)
-                .background(GlanceTheme.colors.primary)
+            modifier = if (nextEnabled) buttonModifier.clickable(onNextAction) else buttonModifier.visibility(
+                Visibility.Invisible
+            )
         ) {
             Image(
                 provider = ImageProvider(R.drawable.arrow_right),
@@ -469,12 +466,13 @@ private fun TripViewPreview() {
             ),
             error = false,
             loading = true,
-            stopIdToHighlight = null,
-            stopTypeToHighlight = null,
             onReloadAction = actionStartActivity<MainActivity>(),
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),
-            onLineClickAction = actionStartActivity<MainActivity>(),
+            prevEnabled = true,
+            nextEnabled = true,
+            stopIdToHighlight = null,
+            stopTypeToHighlight = null,
             //onDirectionClickAction = actionStartActivity<MainActivity>(),
         )
     }
@@ -490,12 +488,13 @@ private fun TripViewPreviewLoading() {
             trip = null,
             error = false,
             loading = loading,
-            stopIdToHighlight = null,
-            stopTypeToHighlight = null,
             onReloadAction = actionStartActivity<MainActivity>(),
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),
-            onLineClickAction = actionStartActivity<MainActivity>(),
+            prevEnabled = true,
+            nextEnabled = true,
+            stopIdToHighlight = null,
+            stopTypeToHighlight = null,
             //onDirectionClickAction = actionStartActivity<MainActivity>()
         )
     }

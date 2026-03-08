@@ -5,7 +5,6 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.appwidget.updateAll
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -15,7 +14,6 @@ import org.stypox.tridenta.repo.LineTripsRepository
 import org.stypox.tridenta.repo.LinesRepository
 import org.stypox.tridenta.widget.MyAppWidget
 
-// 1. Create a Hilt Entry point to access your Repositories inside Glance Actions
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface WidgetEntryPoint {
@@ -24,7 +22,6 @@ interface WidgetEntryPoint {
     // Add HistoryDao and LinesRepository here too
 }
 
-// 2. Refactor: onNextClicked() -> NextTripAction
 class NextTripAction : ActionCallback {
     override suspend fun onAction(
         context: Context,
@@ -39,16 +36,17 @@ class NextTripAction : ActionCallback {
                 return@updateAppWidgetState
             }
 
+            prefs[WidgetKeys.PREV_ENABLED] = nextIndex > 0
+            prefs[WidgetKeys.NEXT_ENABLED] = nextIndex < tripsInDayCount - 1
             prefs[WidgetKeys.PREV_TRIP_INDEX] = currentIndex
             prefs[WidgetKeys.TRIP_INDEX] = nextIndex
         }
 
-        MyAppWidget().updateAll(context)
+        MyAppWidget().update(context, glanceId)
         logInfo("NextTripAction performed")
     }
 }
 
-// 3. Refactor: onPrevClicked() -> PrevTripAction
 class PrevTripAction : ActionCallback {
     override suspend fun onAction(
         context: Context,
@@ -63,16 +61,17 @@ class PrevTripAction : ActionCallback {
                 return@updateAppWidgetState
             }
 
+            prefs[WidgetKeys.PREV_ENABLED] = nextIndex > 0
+            prefs[WidgetKeys.NEXT_ENABLED] = nextIndex < tripsInDayCount - 1
             prefs[WidgetKeys.PREV_TRIP_INDEX] = currentIndex
             prefs[WidgetKeys.TRIP_INDEX] = nextIndex
         }
 
-        MyAppWidget().updateAll(context)
+        MyAppWidget().update(context, glanceId)
         logInfo("PrevTripAction performed")
     }
 }
 
-// 4. Refactor: onReload() -> ReloadTripAction
 class ReloadTripAction : ActionCallback {
     override suspend fun onAction(
         context: Context,
@@ -82,18 +81,16 @@ class ReloadTripAction : ActionCallback {
         updateAppWidgetState(context, glanceId) { prefs ->
             prefs[WidgetKeys.REFRESH_TIMESTAMP] = System.currentTimeMillis()
         }
-        MyAppWidget().updateAll(context)
+        MyAppWidget().update(context, glanceId)
     }
 }
 
-// 5. Refactor: onDirectionClicked() -> ToggleDirectionAction
 class ToggleDirectionAction : ActionCallback {
     override suspend fun onAction(
         context: Context,
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        // Read current direction from prefs, toggle it, fetch new trip, update prefs
         updateAppWidgetState(context, glanceId) { prefs ->
             val actualDirectionFilter = prefs[WidgetKeys.DIRECTION_FILTER]
             val newDirectionFilter = when (Direction.valueOf(
@@ -105,6 +102,6 @@ class ToggleDirectionAction : ActionCallback {
             }
             prefs[WidgetKeys.DIRECTION_FILTER] = newDirectionFilter.name
         }
-        MyAppWidget().updateAll(context)
+        MyAppWidget().update(context, glanceId)
     }
 }
