@@ -10,7 +10,6 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
@@ -32,7 +31,6 @@ import org.stypox.tridenta.repo.data.UiLine
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.util.textColorOnBackground
 import org.stypox.tridenta.util.toLineColor
-import org.stypox.tridenta.widget.actions.ToggleDirectionAction
 import org.stypox.tridenta.widget.theme.SmallCircularProgressIndicatorGlance
 
 /**
@@ -151,12 +149,11 @@ fun WidgetAppBar(
             // News/Warning Icon
             if (line != null && line.newsItems.isNotEmpty()) {
                 Image(
-                    provider = ImageProvider(R.drawable.warning), // Ensure you have this XML drawable
+                    provider = ImageProvider(R.drawable.warning_filled), // Ensure you have this XML drawable
                     contentDescription = "News",
                     colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
                     modifier = GlanceModifier
                         .padding(end = 8.dp)
-                        .clickable(onDirectionAction)
                 )
             }
 
@@ -167,7 +164,7 @@ fun WidgetAppBar(
                 colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
                 modifier = GlanceModifier
                     .padding(end = 8.dp)
-                    .clickable(actionRunCallback<ToggleDirectionAction>())
+                    .clickable(onDirectionAction)
             )
 
             // Favorite Toggle Icon

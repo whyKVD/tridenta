@@ -9,15 +9,17 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,7 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.appwidget.updateAll
 import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -76,26 +77,23 @@ class WidgetConfigurationActivity :
         setResult(Activity.RESULT_CANCELED)
 
         setContent {
-            val viewModel: LinesViewModel = hiltViewModel()
+            val linesViewModel: LinesViewModel = hiltViewModel()
 
-            // 2. Collect the complex UI state
-            val uiState by viewModel.uiState.collectAsState()
+            val linesUiState by linesViewModel.uiState.collectAsState()
+            val lastReloadWasError by linesViewModel.lastReloadWasError.collectAsState()
 
             AppTheme {
-                if (uiState.loading) {
-                    CircularProgressIndicator() // Show loading spinner
-                } else if (uiState.error) {
-                    Text("Error loading lines. Please try again.")
-                } else {
-                    // 4. Pass the loaded lines to your selection screen
-                    LineSelectionScreen(
-                        state = uiState,
-                        onLineSelected = { selectedLine ->
-                            saveWidgetConfiguration(selectedLine)
-                        },
-                        setSelectedArea = viewModel::setSelectedArea
-                    )
-                }
+                LineSelectionScreen(
+                    criticalError = linesUiState.error,
+                    minorError = lastReloadWasError,
+                    loading = linesUiState.loading,
+                    onReload = linesViewModel::onReload,
+                    state = linesUiState,
+                    onLineSelected = { selectedLine ->
+                        saveWidgetConfiguration(selectedLine)
+                    },
+                    setSelectedArea = linesViewModel::setSelectedArea
+                )
             }
         }
     }
@@ -119,7 +117,7 @@ class WidgetConfigurationActivity :
                 prefs[WidgetKeys.DIRECTION_FILTER] = Direction.ForwardAndBackward.name
                 prefs[WidgetKeys.IS_LOADING] = true
             }
-            MyAppWidget().updateAll(this@WidgetConfigurationActivity)
+            MyAppWidget().update(this@WidgetConfigurationActivity, glanceId)
 
             // 5. Tell the Android OS that the configuration was successful
             withContext(Dispatchers.Main) {
@@ -135,7 +133,15 @@ class WidgetConfigurationActivity :
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LineSelectionScreen(state: LinesUiState, onLineSelected: (DbLine) -> Unit, setSelectedArea: (Area) -> Unit) {
+fun LineSelectionScreen(
+    criticalError: Boolean,
+    minorError: Boolean,
+    loading: Boolean,
+    onReload: () -> Unit,
+    state: LinesUiState,
+    onLineSelected: (DbLine) -> Unit,
+    setSelectedArea: (Area) -> Unit
+) {
     var showAreaDialog by rememberSaveable { mutableStateOf(false) }
     if (showAreaDialog) {
         SelectAreaDialog(
@@ -157,17 +163,25 @@ fun LineSelectionScreen(state: LinesUiState, onLineSelected: (DbLine) -> Unit, s
                 )
             }
         })
-    }) { innerPadding ->
-        LazyColumn(
+    }) { paddingValues ->
+        PullToRefreshBox(
+            isRefreshing = loading,
+            state = rememberPullToRefreshState(),
+            onRefresh = onReload,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .padding(paddingValues)
+                .fillMaxHeight()
         ) {
-            items(state.lines) { line ->
-                LineItem(
-                    line, true,
-                    modifier = Modifier.clickable { onLineSelected(line) },
-                )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                items(state.lines) { line ->
+                    LineItem(
+                        line, true,
+                        modifier = Modifier.clickable { onLineSelected(line) },
+                    )
+                }
             }
         }
     }
