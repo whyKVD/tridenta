@@ -8,6 +8,7 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import org.stypox.tridenta.db.HistoryDao
 import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.repo.LineTripsRepository
@@ -19,6 +20,7 @@ import org.stypox.tridenta.widget.MyAppWidget
 interface WidgetEntryPoint {
     fun lineTripsRepository(): LineTripsRepository
     fun lineRepository(): LinesRepository
+    fun historyDao(): HistoryDao
     // Add HistoryDao and LinesRepository here too
 }
 
@@ -103,5 +105,6 @@ class ToggleDirectionAction : ActionCallback {
             prefs[WidgetKeys.DIRECTION_FILTER] = newDirectionFilter.name
         }
         MyAppWidget().update(context, glanceId)
+        logInfo("ToggleDirectionAction performed")
     }
 }
