@@ -26,9 +26,7 @@ interface WidgetEntryPoint {
 
 class NextTripAction : ActionCallback {
     override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
+        context: Context, glanceId: GlanceId, parameters: ActionParameters
     ) {
         updateAppWidgetState(context, glanceId) { prefs ->
             val currentIndex = prefs[WidgetKeys.TRIP_INDEX] ?: 0
@@ -51,9 +49,7 @@ class NextTripAction : ActionCallback {
 
 class PrevTripAction : ActionCallback {
     override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
+        context: Context, glanceId: GlanceId, parameters: ActionParameters
     ) {
         updateAppWidgetState(context, glanceId) { prefs ->
             val currentIndex = prefs[WidgetKeys.TRIP_INDEX] ?: 0
@@ -76,9 +72,7 @@ class PrevTripAction : ActionCallback {
 
 class ReloadTripAction : ActionCallback {
     override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
+        context: Context, glanceId: GlanceId, parameters: ActionParameters
     ) {
         updateAppWidgetState(context, glanceId) { prefs ->
             prefs[WidgetKeys.REFRESH_TIMESTAMP] = System.currentTimeMillis()
@@ -89,9 +83,7 @@ class ReloadTripAction : ActionCallback {
 
 class ToggleDirectionAction : ActionCallback {
     override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
+        context: Context, glanceId: GlanceId, parameters: ActionParameters
     ) {
         updateAppWidgetState(context, glanceId) { prefs ->
             val actualDirectionFilter = prefs[WidgetKeys.DIRECTION_FILTER]
@@ -103,6 +95,7 @@ class ToggleDirectionAction : ActionCallback {
                 Direction.ForwardAndBackward -> Direction.Forward
             }
             prefs[WidgetKeys.DIRECTION_FILTER] = newDirectionFilter.name
+            prefs[WidgetKeys.TOGGLED_DIRECTION] = true
         }
         MyAppWidget().update(context, glanceId)
         logInfo("ToggleDirectionAction performed")
