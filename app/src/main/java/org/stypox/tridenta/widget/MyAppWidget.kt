@@ -118,13 +118,6 @@ class MyAppWidget : GlanceAppWidget() {
             val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
             if (lineTypeString != null) lineType = StopLineType.valueOf(lineTypeString)
             val tripIndex = prefs[WidgetKeys.TRIP_INDEX]
-            if (tripIndex != null && lineTripsUiState.tripIndex != tripIndex) {
-                mutableUiState.update {
-                    it.copy(
-                        tripIndex = tripIndex
-                    )
-                }
-            }
             val toggledDirection = prefs[WidgetKeys.TOGGLED_DIRECTION] ?: false
             val prevTripIndex = prefs[WidgetKeys.PREV_TRIP_INDEX]
             val refreshTimestamp = prefs[WidgetKeys.REFRESH_TIMESTAMP] ?: 0L
@@ -144,11 +137,7 @@ class MyAppWidget : GlanceAppWidget() {
                 mutableUiState.update {
                     it.copy(tripsInDayCount = tripsInDayCount)
                 }
-            }/*if(lineId != -1 && lineTypeString != null) isFavorite = historyDao.isFavorite(
-                isLine = true,
-                id = lineId,
-                type = lineType
-            ).value ?: false*/
+            }
 
             LaunchedEffect(lineId, lineTypeString) { // retrieving line
                 if (lineId == -1 || lineTypeString == null) {
@@ -168,68 +157,7 @@ class MyAppWidget : GlanceAppWidget() {
                     }
                     return@LaunchedEffect
                 }
-                loadIndex(tripIndex, context, id)/*try {
-                    if (lineTripsUiState.directionFilter == Direction.ForwardAndBackward) {
-                        val (fetchedTrip, network) = withContext(Dispatchers.IO) {
-                            tripsRepository.getUiTrip(
-                                lineId,
-                                lineType,
-                                lineTripsUiState.referenceDateTime,
-                                tripIndex
-                            )
-                        }
-                        mutableUiState.update { it.copy(trip = fetchedTrip, tripIndex = tripIndex) }
-                        if (!network) {
-                            updateTrip(tripIndex, mutableUiState, fetchedTrip)
-                        }
-                    } else {
-                        if (prevTripIndex == null) {
-                            prevTripIndex = tripIndex
-                        }
-                        val data = withContext(Dispatchers.IO) {
-                            tripsRepository.getUiTripWithDirection(
-                                lineId,
-                                lineType,
-                                lineTripsUiState.referenceDateTime,
-                                lineTripsUiState.directionFilter,
-                                tripIndex,
-                                prevTripIndex
-                            )
-                        }
-                        if (data == null) {
-                            updateAppWidgetState(context, id) { prefs ->
-                                prefs[WidgetKeys.TRIP_INDEX] = prevTripIndex
-                                if (tripIndex < prevTripIndex) {
-                                    prefs[WidgetKeys.PREV_ENABLED] = false
-                                    mutableUiState.update { it.copy(prevEnabled = false) }
-                                }
-                                if (tripIndex > prevTripIndex) {
-                                    prefs[WidgetKeys.NEXT_ENABLED] = false
-                                    mutableUiState.update { it.copy(nextEnabled = false) }
-                                }
-                            }
-                            return@LaunchedEffect
-                        }
-                        mutableUiState.update {
-                            it.copy(
-                                trip = data.first,
-                                tripIndex = data.second
-                            )
-                        }
-                        if (!data.third) {
-                            updateTrip(tripIndex, mutableUiState, data.first)
-                        }
-                        updateAppWidgetState(context, id) { prefs ->
-                            prefs[WidgetKeys.TRIP_INDEX] = data.second
-                            prefs[WidgetKeys.PREV_TRIP_INDEX] = tripIndex
-                        }
-                    }
-                } catch (e: Exception) {
-                    logError(e.message!!, e.cause)
-                    mutableUiState.update { it.copy(error = true) }
-                } finally {
-                    mutableUiState.update { it.copy(loading = false) }
-                }*/
+                loadIndex(tripIndex, context, id)
             }
 
             LaunchedEffect(storedDirectionFilter) {
@@ -240,7 +168,6 @@ class MyAppWidget : GlanceAppWidget() {
                 if (newDirectionFilter == Direction.ForwardAndBackward) {
                     val state = uiState.value
                     if (state.trip == null) {
-                        logInfo("updating direction if")
                         // the trip can be null if there is no trip in that direction
                         loadIndex(state.tripIndex, context, id)
                     } else {
@@ -257,18 +184,21 @@ class MyAppWidget : GlanceAppWidget() {
                 } else {
                     val state = uiState.value
                     if (state.trip?.direction != newDirectionFilter) {
-                        logInfo("updating direction else")
                         // we need to load another trip, since the current one has the wrong direction
                         loadIndex(state.tripIndex, context, id)
+                        logInfo("state.tripIndex: ${state.tripIndex}")
+                        logInfo("lineTripsUiState.tripIndex: ${lineTripsUiState.tripIndex}")
                         updateAppWidgetState(context, id) { prefs ->
                             prefs[WidgetKeys.TRIP_INDEX] = lineTripsUiState.tripIndex
+                            prefs[WidgetKeys.PREV_TRIP_INDEX] = state.tripIndex
                             prefs[WidgetKeys.TRIPS_IN_DAY_COUNT] = lineTripsUiState.tripsInDayCount
                             prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] = true
+                            prefs[WidgetKeys.DIRECTION_FILTER] = lineTripsUiState.directionFilter.name
                             prefs[WidgetKeys.PREV_ENABLED] = lineTripsUiState.tripIndex > 0
                             prefs[WidgetKeys.NEXT_ENABLED] =
-                                lineTripsUiState.tripIndex < (prefs[WidgetKeys.TRIPS_IN_DAY_COUNT]
-                                    ?: 0) - 1
+                                lineTripsUiState.tripIndex < lineTripsUiState.tripsInDayCount - 1
                         }
+                        this@MyAppWidget.update(context,id)
                     }
                 }
                 updateAppWidgetState(context, id) { prefs ->
@@ -284,6 +214,7 @@ class MyAppWidget : GlanceAppWidget() {
 
             logInfo("${System.currentTimeMillis()}")
             logInfo("tripIndex: $tripIndex")
+            logInfo("lineTripsUiState.tripIndex: ${lineTripsUiState.tripIndex}")
             logInfo("trip: ${lineTripsUiState.trip}")
             logInfo("prevTripIndex: $prevTripIndex")
             logInfo("directionFilter: ${lineTripsUiState.directionFilter}")
@@ -318,15 +249,15 @@ class MyAppWidget : GlanceAppWidget() {
             val line = withContext(Dispatchers.IO) {
                 try {
                     linesRepository.getUiLine(lineId, lineType).also {
-                            if (it == null) {
-                                logError(
-                                    "UI line (${lineId}, ${lineType}) not found"
-                                )
-                            }
-
-                            // register a view for this line (assuming loadLine is called once)
-                            historyDao.registerAccessed(true, lineId, lineType)
+                        if (it == null) {
+                            logError(
+                                "UI line (${lineId}, ${lineType}) not found"
+                            )
                         }
+
+                        // register a view for this line (assuming loadLine is called once)
+                        historyDao.registerAccessed(true, lineId, lineType)
+                    }
                 } catch (e: Throwable) {
                     logError("Could not load UI line (${lineId}, ${lineType})", e)
                     null
@@ -435,6 +366,7 @@ class MyAppWidget : GlanceAppWidget() {
             prefs[WidgetKeys.PREV_ENABLED] = tripIndex > 0
             prefs[WidgetKeys.NEXT_ENABLED] = tripIndex < tripsInDayCount - 1
         }
+        logInfo("setReferenceDateTimeAsync tripIndex: $tripIndex")
     }
 
     private suspend fun onReloadAsync(context: Context, id: GlanceId) {
@@ -520,8 +452,8 @@ class MyAppWidget : GlanceAppWidget() {
         val res = withContext(Dispatchers.IO) {
             try {
                 tripsRepository.getUiTripWithDirection(
-                    lineId = mutableUiState.value.line?.lineId!!,
-                    lineType = mutableUiState.value.line?.type!!,
+                    lineId = lineId,
+                    lineType = lineType,
                     referenceDateTime = uiState.value.referenceDateTime,
                     index = index,
                     direction = prevState.directionFilter,
@@ -571,6 +503,7 @@ class MyAppWidget : GlanceAppWidget() {
             }
             updateAppWidgetState(context, id) { prefs ->
                 prefs[WidgetKeys.TRIP_INDEX] = newIndex
+                prefs[WidgetKeys.PREV_TRIP_INDEX] = prevState.tripIndex
                 prefs[WidgetKeys.PREV_ENABLED] = newIndex > 0
                 prefs[WidgetKeys.NEXT_ENABLED] = newIndex < uiState.value.tripsInDayCount - 1
             }
