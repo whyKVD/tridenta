@@ -97,7 +97,7 @@ class MyAppWidget : GlanceAppWidget() {
         tripsRepository = hiltEntryPoint.lineTripsRepository()
         linesRepository = hiltEntryPoint.lineRepository()
         historyDao = hiltEntryPoint.historyDao()
-        //referenceDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+
         mutableUiState.update {
             it.copy(
                 referenceDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)

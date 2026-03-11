@@ -13,6 +13,7 @@ import androidx.glance.appwidget.lazy.itemsIndexed
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
@@ -58,11 +59,6 @@ fun TripViewStopsGlance(
                         stopTime.stop.type == stopTypeToHighlight,
                 completed = index < trip.completedStops,
                 stopTime = stopTime,
-                modifier = if (stopTime.stop == null || onStopClick == null) {
-                    GlanceModifier // not clickable, since there is no stop
-                } else {
-                    GlanceModifier // TODO: aggiungere clickable
-                }
             )
         }
 
@@ -108,7 +104,7 @@ private fun TripViewStopItemGlance(
     val context = LocalContext.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 0.dp)
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 0.dp).fillMaxWidth()
     ) {
         Image(
             provider = ImageProvider(
@@ -162,7 +158,7 @@ private fun TripViewStopItemGlance(
                 fontWeight = if (highlight) FontWeight.Bold else null,
                 color = textColor
             ),
-            modifier = GlanceModifier
+            modifier = GlanceModifier.defaultWeight()
                 .run {
                     if (stopTime.arrivalTime == null && stopTime.departureTime == null) {
                         this // do not apply end padding if there is nothing after

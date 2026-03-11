@@ -96,7 +96,6 @@ fun WidgetAppBar(
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .clickable(onLineClickAction)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -111,6 +110,8 @@ fun WidgetAppBar(
             val shortNameBackground = line.color.toLineColor()
             val textColor = textColorOnBackground(shortNameBackground)
             Row(
+                modifier = GlanceModifier
+                    .clickable(onLineClickAction),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -149,9 +150,9 @@ fun WidgetAppBar(
             // News/Warning Icon
             if (line != null && line.newsItems.isNotEmpty()) {
                 Image(
-                    provider = ImageProvider(R.drawable.warning_filled), // Ensure you have this XML drawable
+                    provider = ImageProvider(R.drawable.warning_filled),
                     contentDescription = "News",
-                    colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
                     modifier = GlanceModifier
                         .padding(end = 8.dp)
                 )
@@ -161,7 +162,7 @@ fun WidgetAppBar(
             Image(
                 provider = ImageProvider(getDirectionDrawable(directionFilter)),
                 contentDescription = "Toggle Direction",
-                colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
+                colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
                 modifier = GlanceModifier
                     .padding(end = 8.dp)
                     .clickable(onDirectionAction)
@@ -172,7 +173,7 @@ fun WidgetAppBar(
                 provider = ImageProvider(
                     if (isFavorite) R.drawable.favorite_filled else R.drawable.favorite
                 ),
-                colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
+                colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
                 contentDescription = context.getString(R.string.favorite),
             )
         }

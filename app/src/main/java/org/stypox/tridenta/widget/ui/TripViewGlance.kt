@@ -161,6 +161,25 @@ fun TripViewGlance(
 }
 
 @Composable
+fun StopLineTypeIcon(stopLineType: StopLineType,context: Context, modifier: GlanceModifier = GlanceModifier) {
+    Image(
+        provider = ImageProvider(
+            when (stopLineType) {
+                StopLineType.Urban -> R.drawable.location_city
+                StopLineType.Suburban -> R.drawable.landscape
+            }
+        ),
+        contentDescription = context.getString(
+            when (stopLineType) {
+                StopLineType.Urban -> R.string.urban
+                StopLineType.Suburban -> R.string.suburban
+            }
+        ),
+        colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
+        modifier = modifier,
+    )
+}
+@Composable
 fun DirectionIconGlance(
     direction: Direction,
     context: Context,
@@ -181,7 +200,7 @@ fun DirectionIconGlance(
                 Direction.ForwardAndBackward -> R.string.forward_and_backward
             }
         ),
-        colorFilter = ColorFilter.tint(GlanceTheme.colors.primary),
+        colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
         modifier = modifier
     )
 }
@@ -252,6 +271,7 @@ private fun TripViewTopRowGlance(
         }
 
         Column {
+            StopLineTypeIcon(trip.type,context)
             DirectionIconGlance(trip.direction, context)
         }
     }
@@ -465,7 +485,7 @@ private fun TripViewPreview() {
                 busId = 886,
             ),
             error = false,
-            loading = true,
+            loading = false,
             onReloadAction = actionStartActivity<MainActivity>(),
             onPrevAction = actionStartActivity<MainActivity>(),
             onNextAction = actionStartActivity<MainActivity>(),
@@ -473,7 +493,6 @@ private fun TripViewPreview() {
             nextEnabled = true,
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
-            //onDirectionClickAction = actionStartActivity<MainActivity>(),
         )
     }
 }
@@ -495,7 +514,6 @@ private fun TripViewPreviewLoading() {
             nextEnabled = true,
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
-            //onDirectionClickAction = actionStartActivity<MainActivity>()
         )
     }
 }
