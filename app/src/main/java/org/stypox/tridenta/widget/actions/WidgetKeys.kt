@@ -17,6 +17,8 @@ object WidgetKeys {
     val IS_INITIAL_DATA_LOADED = booleanPreferencesKey("is_initial_data_loaded")
     val HAS_ERROR = booleanPreferencesKey("has_error")
     val TOGGLED_DIRECTION = booleanPreferencesKey("toggled_direction")
+    val CHANGED_LINE = booleanPreferencesKey("changed_line")
+    val CHANGED_TRIP = booleanPreferencesKey("changed_trip")
     val PREV_ENABLED = booleanPreferencesKey("prev_enabled")
     val NEXT_ENABLED = booleanPreferencesKey("next_enabled")
 
