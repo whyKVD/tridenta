@@ -1,5 +1,5 @@
 [versions]
-agp = "8.9.1"
+agp = "8.13.0"
 composeDestinations = "1.9.54"
 espressoCore = "3.6.1"
 hilt = "2.55"
@@ -16,10 +16,16 @@ material3 = "1.3.1"
 okhttp = "4.12.0"
 preference = "1.2.1"
 compose = "1.7.8"
-kotlin = "2.1.10"
-ksp = "2.1.10-1.0.30"
+kotlin = "2.2.21"
+ksp = "2.3.0"
 java = "11"
 glance = "1.1.1"
+kotlinSerializationPlugin = "2.2.21"
+kotlinSerialization = "1.9.0"
+work = "2.10.0"
+workRuntimeKtx = "2.11.1"
+hiltCommon = "1.2.0"
+hiltWork = "1.2.0"
 
 [libraries]
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -55,8 +61,16 @@ glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = 
 glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 glance-preview = { module = "androidx.glance:glance-preview", version.ref = "glance" }
 glance-appwidget-preview = { module = "androidx.glance:glance-appwidget-preview", version.ref = "glance" }
+kotlin-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinSerialization" }
+kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
+work = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
+androidx-hilt-common = { group = "androidx.hilt", name = "hilt-common", version.ref = "hiltCommon" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork"}
 
 [plugins]
+kotlin-serialization = { id =  "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerializationPlugin"}
 com-android-application = { id = "com.android.application", version.ref = "agp" }
 org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 com-google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
