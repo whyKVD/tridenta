@@ -34,6 +34,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -43,13 +44,16 @@ import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.enums.Area
 import org.stypox.tridenta.enums.Direction
+import org.stypox.tridenta.extractor.ROME_ZONE_ID
+import org.stypox.tridenta.log.logError
 import org.stypox.tridenta.ui.lines.AreaChip
 import org.stypox.tridenta.ui.lines.LineItem
 import org.stypox.tridenta.ui.lines.LinesUiState
 import org.stypox.tridenta.ui.lines.LinesViewModel
 import org.stypox.tridenta.ui.lines.SelectAreaDialog
 import org.stypox.tridenta.ui.theme.AppTheme
-import org.stypox.tridenta.widget.actions.WidgetKeys
+import org.stypox.tridenta.widget.actions.WidgetEntryPoint
+import java.time.ZonedDateTime
 
 @AndroidEntryPoint
 class WidgetConfigurationActivity :
@@ -108,16 +112,53 @@ class WidgetConfigurationActivity :
             // 2. Map the standard Android appWidgetId to a Jetpack GlanceId
             val glanceManager = GlanceAppWidgetManager(context)
             val glanceId = glanceManager.getGlanceIdBy(appWidgetId)
+            val hiltEntryPoint =
+                EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+            val line = withContext(Dispatchers.IO) {
+                try {
+                    hiltEntryPoint.lineRepository().getUiLine(line.lineId, line.type).also {
+                        if (it == null) {
+                            logError(
+                                "UI line (${line.lineId}, ${line.type}) not found"
+                            )
+                        }
+
+                        // register a view for this line (assuming loadLine is called once)
+                        hiltEntryPoint.historyDao().registerAccessed(true, line.lineId, line.type)
+                    }
+                } catch (e: Throwable) {
+                    logError("Could not load UI line (${line.lineId}, ${line.type})", e)
+                    null
+                }
+            }
+            if (line == null) {
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    WidgetState.Unavailable(message = "Something went wrong")
+                }
+                return@launch
+            }
+            val tripsRepository = hiltEntryPoint.lineTripsRepository()
+            val referenceDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+            val (tripsInDayCount, tripIndex, trip) = tripsRepository.getUiTrip(
+                line.lineId,
+                line.type,
+                referenceDateTime,
+                Direction.ForwardAndBackward
+            )
 
             // 3. Save the selected data to this specific widget's Preferences
-            updateAppWidgetState(context, glanceId) { prefs ->
-                prefs.clear()
-                prefs[WidgetKeys.LINE_ID] = line.lineId
-                prefs[WidgetKeys.LINE_TYPE] = line.type.name
-                prefs[WidgetKeys.DIRECTION_FILTER] = Direction.ForwardAndBackward.name
-                prefs[WidgetKeys.IS_LOADING] = true
+            updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                WidgetState.Available(
+                    line,
+                    trip,
+                    ZonedDateTime.now(),
+                    tripsInDayCount,
+                    tripIndex,
+                    prevEnabled = tripIndex > 0,
+                    nextEnabled = tripIndex < tripsInDayCount - 1,
+                )
             }
-            MyAppWidget().update(this@WidgetConfigurationActivity, glanceId)
+            LineTripWidget().update(this@WidgetConfigurationActivity, glanceId)
 
             // 5. Tell the Android OS that the configuration was successful
             withContext(Dispatchers.Main) {
