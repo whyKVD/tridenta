@@ -46,7 +46,7 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
-        <receiver android:name=".widget.MyAppWidgetReceiver"
+        <receiver android:name=".widget.LineTripWidgetReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -55,6 +55,20 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/my_app_widget_info" />
         </receiver>
+
+        <!-- This is used for the CoroutineWorker -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <!-- If you are using androidx.startup to initialize other components -->
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
     </application>
+
 
 </manifest>

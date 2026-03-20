@@ -1,7 +1,14 @@
 package org.stypox.tridenta
 
 import android.app.Application
+import android.util.Log
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.MainScope
 import org.stypox.tridenta.db.LogDao
 import org.stypox.tridenta.log.AppUncaughtExceptionHandler
@@ -10,7 +17,7 @@ import org.stypox.tridenta.log.setupLogger
 import javax.inject.Inject
 
 @HiltAndroidApp
-class TridentaApplication : Application() {
+class TridentaApplication : Application(), Configuration.Provider {
 
     // store logger's DAO and scope here, so that they are correctly garbage collected when
     // Application is destroyed (probably this is not needed, but let's be sure)
@@ -25,4 +32,17 @@ class TridentaApplication : Application() {
         // cleanup old logs (we don't want the database to be cluttered with those)
         clearOldLogs()
     }
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface HiltWorkerFactoryEntryPoint {
+        fun workerFactory(): HiltWorkerFactory
+    }
+
+    override val workManagerConfiguration by lazy {Configuration.Builder()
+        .setWorkerFactory(
+            EntryPointAccessors.fromApplication(this, HiltWorkerFactoryEntryPoint::class.java).workerFactory()
+        )
+        .setMinimumLoggingLevel(Log.INFO)
+        .build()}
 }
