@@ -1,13 +1,14 @@
 package org.stypox.tridenta.repo.data
 
 import androidx.annotation.ColorInt
+import kotlinx.serialization.Serializable
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbNewsItem
 import org.stypox.tridenta.enums.Area
 import org.stypox.tridenta.enums.StopLineType
 import java.util.regex.Pattern
 import kotlin.math.min
-
+@Serializable
 data class UiLine(
     val lineId: Int,
     val type: StopLineType,

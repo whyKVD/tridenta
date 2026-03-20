@@ -5,13 +5,16 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Ignore
 import androidx.room.Index
+import kotlinx.serialization.Serializable
 import org.stypox.tridenta.enums.Area
 import org.stypox.tridenta.enums.StopLineType
+import org.stypox.tridenta.util.OffsetDateTimeSerializer
 import java.time.OffsetDateTime
 
 @Entity(
     primaryKeys = ["lineId", "type"]
 )
+@Serializable
 data class DbLine(
     // some testing exposed that a line is always identified by the (lineId, type) tuple
     val lineId: Int,
@@ -49,9 +52,12 @@ data class DbLine(
         Index("lineId", "lineType")
     ]
 )
+@Serializable
 data class DbNewsItem(
     val serviceType: String,
+    @Serializable(with = OffsetDateTimeSerializer::class)
     val startDate: OffsetDateTime,
+    @Serializable(with = OffsetDateTimeSerializer::class)
     val endDate: OffsetDateTime,
     val header: String,
     val details: String,

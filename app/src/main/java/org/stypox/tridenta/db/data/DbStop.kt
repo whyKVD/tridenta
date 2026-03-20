@@ -1,12 +1,14 @@
 package org.stypox.tridenta.db.data
 
 import androidx.room.*
+import kotlinx.serialization.Serializable
 import org.stypox.tridenta.enums.CardinalPoint
 import org.stypox.tridenta.enums.StopLineType
 
 @Entity(
     primaryKeys = ["stopId", "type"]
 )
+@Serializable
 data class DbStop(
     // some testing exposed that a stop is always identified by the (stopId, type) tuple
     val stopId: Int,
