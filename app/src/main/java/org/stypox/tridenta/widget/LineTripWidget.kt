@@ -4,11 +4,9 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.datastore.preferences.core.Preferences
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
+import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
@@ -16,18 +14,19 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.currentState
+import androidx.glance.layout.padding
 import androidx.glance.preview.ExperimentalGlancePreviewApi
 import androidx.glance.preview.Preview
-import kotlinx.coroutines.flow.update
+import androidx.glance.text.Text
+import androidx.glance.text.TextStyle
+import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
 import org.stypox.tridenta.enums.Area
 import org.stypox.tridenta.enums.CardinalPoint
 import org.stypox.tridenta.enums.Direction
 import org.stypox.tridenta.enums.StopLineType
-import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.repo.data.UiStopTime
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.ui.MainActivity
@@ -35,19 +34,17 @@ import org.stypox.tridenta.widget.actions.NextTripAction
 import org.stypox.tridenta.widget.actions.PrevTripAction
 import org.stypox.tridenta.widget.actions.ReloadTripAction
 import org.stypox.tridenta.widget.actions.ToggleDirectionAction
-import org.stypox.tridenta.widget.actions.WidgetKeys
+import org.stypox.tridenta.widget.theme.SmallCircularProgressIndicatorGlance
 import org.stypox.tridenta.widget.ui.LineTripsWidgetScreen
 import org.stypox.tridenta.widget.ui.TripViewGlance
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
-class MyAppWidget : GlanceAppWidget() {
-    lateinit var model: WidgetModel
+class LineTripWidget : GlanceAppWidget() {
+    override val stateDefinition = LineTripWidgetStateDefinition
     override suspend fun provideGlance(
         context: Context, id: GlanceId
     ) {
-        model = WidgetModel(context, id)
-        model.initState()
 
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
         val configIntent = Intent(context, WidgetConfigurationActivity::class.java).apply {
@@ -55,129 +52,36 @@ class MyAppWidget : GlanceAppWidget() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
         }
         provideContent {
-            val lineTripsUiState by model.uiState.collectAsState()
-            val prefs = currentState<Preferences>()
-
-            val lineId = prefs[WidgetKeys.LINE_ID] ?: -1
-            val lineTypeString = prefs[WidgetKeys.LINE_TYPE]
-            val tripIndex = prefs[WidgetKeys.TRIP_INDEX]
-            val toggledDirection = prefs[WidgetKeys.TOGGLED_DIRECTION] ?: false
-            val prevTripIndex = prefs[WidgetKeys.PREV_TRIP_INDEX]
-            val refreshTimestamp = prefs[WidgetKeys.REFRESH_TIMESTAMP] ?: 0L
-            val storedDirectionFilter = prefs[WidgetKeys.DIRECTION_FILTER]
-            val tripsInDayCount = prefs[WidgetKeys.TRIPS_IN_DAY_COUNT]
-
-            LaunchedEffect(lineId) { // retrieving line
-                if (lineId == -1 || lineTypeString == null) {
-                    return@LaunchedEffect
-                }
-                model.initState()
-                if (lineTripsUiState.line == null || lineTripsUiState.line!!.lineId != lineId) {
-                    model.loadLine()
-                }
-            }
-
-            LaunchedEffect(
-                model.lineId, tripIndex, prevTripIndex, tripsInDayCount
-            ) { // retrieving trip
-                if (tripIndex == null) {
-                    model.cancelTripReloadJobAndLaunch {
-                        model.setReferenceDateTimeAsync(lineTripsUiState.referenceDateTime)
-                    }
-                    return@LaunchedEffect
-                }
-                model.loadIndex(tripIndex)
-                model.initState()
-            }
-
-            LaunchedEffect(storedDirectionFilter) {
-                if (storedDirectionFilter == null || !toggledDirection) return@LaunchedEffect
-                val newDirectionFilter = Direction.valueOf(storedDirectionFilter)
-                model.mutableUiState.update { it.copy(directionFilter = newDirectionFilter) }
-
-                if (newDirectionFilter == Direction.ForwardAndBackward) {
-                    val state = model.uiState.value
-                    if (state.trip == null) {
-                        // the trip can be null if there is no trip in that direction
-                        model.loadIndex(state.tripIndex)
-                    } else {
-                        // no need to load the trip, as it's already loaded
-                        model.mutableUiState.update {
-                            it.copy(
-                                prevEnabled = state.tripIndex > 0,
-                                nextEnabled = state.tripIndex < model.uiState.value.tripsInDayCount - 1,
-                                directionFilter = newDirectionFilter,
-                            )
-                        }
-                    }
-
-                } else {
-                    val state = model.uiState.value
-                    if (state.trip?.direction != newDirectionFilter) {
-                        // we need to load another trip, since the current one has the wrong direction
-                        model.loadIndex(state.tripIndex)
-                        logInfo("state.tripIndex: ${state.tripIndex}")
-                        logInfo("lineTripsUiState.tripIndex: ${lineTripsUiState.tripIndex}")
-                        updateAppWidgetState(context, id) { prefs ->
-                            prefs[WidgetKeys.TRIP_INDEX] = lineTripsUiState.tripIndex
-                            prefs[WidgetKeys.PREV_TRIP_INDEX] = state.tripIndex
-                            prefs[WidgetKeys.TRIPS_IN_DAY_COUNT] = lineTripsUiState.tripsInDayCount
-                            prefs[WidgetKeys.IS_INITIAL_DATA_LOADED] = true
-                            prefs[WidgetKeys.DIRECTION_FILTER] =
-                                lineTripsUiState.directionFilter.name
-                            prefs[WidgetKeys.PREV_ENABLED] = lineTripsUiState.tripIndex > 0
-                            prefs[WidgetKeys.NEXT_ENABLED] =
-                                lineTripsUiState.tripIndex < lineTripsUiState.tripsInDayCount - 1
-                        }
-                        this@MyAppWidget.update(context, id)
-                    }
-                }
-                updateAppWidgetState(context, id) { prefs ->
-                    prefs[WidgetKeys.TOGGLED_DIRECTION] = false
-                }
-            }
-
-            if (storedDirectionFilter != null && Direction.valueOf(storedDirectionFilter) != lineTripsUiState.directionFilter) {
-                model.mutableUiState.update {
-                    it.copy(
-                        directionFilter = Direction.valueOf(storedDirectionFilter)
-                    )
-                }
-            }
-
-            LaunchedEffect(refreshTimestamp) { // updating trip
-                if (refreshTimestamp == 0L || tripIndex == null || lineTripsUiState.trip == null) return@LaunchedEffect
-                //updateTrip(tripIndex, mutableUiState, lineTripsUiState.trip!!)
-                model.cancelTripReloadJobAndLaunch { model.onReloadAsync() }
-            }
-
-            logInfo("${System.currentTimeMillis()}")
-            logInfo("tripIndex: $tripIndex")
-            logInfo("lineTripsUiState.tripIndex: ${lineTripsUiState.tripIndex}")
-            logInfo("trip: ${lineTripsUiState.trip}")
-            logInfo("prevTripIndex: $prevTripIndex")
-            logInfo("directionFilter: ${lineTripsUiState.directionFilter}")
-            logInfo("isFavorite: ${lineTripsUiState.line?.isFavorite}")
-            logInfo("isLoading: ${lineTripsUiState.loading}")
+            val state = currentState<WidgetState>()
 
             GlanceTheme {
-                LineTripsWidgetScreen(
-                    line = lineTripsUiState.line,
-                    trip = lineTripsUiState.trip,
-                    error = lineTripsUiState.error,
-                    loading = lineTripsUiState.loading,
-                    onReloadAction = actionRunCallback<ReloadTripAction>(),
-                    onPrevAction = actionRunCallback<PrevTripAction>(),
-                    onNextAction = actionRunCallback<NextTripAction>(),
-                    onLineClickAction = actionStartActivity(configIntent),
-                    directionFilter = lineTripsUiState.directionFilter,
-                    onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
-                    stopIdToHighlight = null,
-                    stopTypeToHighlight = null,
-                    prevEnabled = lineTripsUiState.prevEnabled,
-                    nextEnabled = lineTripsUiState.nextEnabled,
-                    isFavorite = lineTripsUiState.line?.isFavorite ?: false
-                )
+                when (state) {
+                    is WidgetState.Loading -> SmallCircularProgressIndicatorGlance()
+                    is WidgetState.Available ->
+                        LineTripsWidgetScreen(
+                            line = state.line,
+                            trip = state.trip,
+                            error = state.error,
+                            loading = state.loading,
+                            onReloadAction = actionRunCallback<ReloadTripAction>(),
+                            onPrevAction = actionRunCallback<PrevTripAction>(),
+                            onNextAction = actionRunCallback<NextTripAction>(),
+                            onLineClickAction = actionStartActivity(configIntent),
+                            directionFilter = state.directionFilter,
+                            onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
+                            stopIdToHighlight = null,
+                            stopTypeToHighlight = null,
+                            prevEnabled = state.prevEnabled,
+                            nextEnabled = state.nextEnabled,
+                            isFavorite = state.line?.isFavorite ?: false
+                        )
+
+                    is WidgetState.Unavailable -> Text(
+                        text = context.getString(R.string.error),
+                        style = TextStyle(color = GlanceTheme.colors.error),
+                        modifier = GlanceModifier.padding(8.dp)
+                    )
+                }
             }
         }
     }
