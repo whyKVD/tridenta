@@ -10,9 +10,6 @@ import java.time.ZonedDateTime
 @Serializable
 sealed interface WidgetState {
     @Serializable
-    data object Loading : WidgetState
-
-    @Serializable
     data class Available(
         val line: UiLine?,
         val trip: UiTrip?,

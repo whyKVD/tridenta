@@ -33,11 +33,6 @@ import org.stypox.tridenta.util.textColorOnBackground
 import org.stypox.tridenta.util.toLineColor
 import org.stypox.tridenta.widget.theme.SmallCircularProgressIndicatorGlance
 
-/**
- * The Glance equivalent of your LineTripsScreen.
- * * Notice that we don't pass ViewModels, Navigators, or lambda functions.
- * In Glance, user interactions MUST be passed as `Action` objects (like actionRunCallback).
- */
 @Composable
 fun LineTripsWidgetScreen(
     line: UiLine?,
@@ -50,14 +45,12 @@ fun LineTripsWidgetScreen(
     stopTypeToHighlight: StopLineType?,
     isFavorite: Boolean,
     directionFilter: Direction,
-    // Actions replace standard lambdas in Glance
     onReloadAction: Action,
     onPrevAction: Action,
     onNextAction: Action,
     onLineClickAction: Action,
     onDirectionClickAction: Action
 ) {
-    // Glance's Scaffold is very basic. It gives you a background and layout structure.
     Column(
         modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.background)
     ) {
@@ -118,17 +111,14 @@ fun WidgetAppBar(
                     text = context.getString(R.string.trips_for_line),
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
-                        //fontWeight = FontWeight.Bold,
-                        //fontSize = 16.sp
                     ),
                     modifier = GlanceModifier.defaultWeight()
                 )
                 Spacer(GlanceModifier.size(8.dp))
                 Box(
                     modifier = GlanceModifier
-                        .background(shortNameBackground) // Use a theme color instead of dynamic custom color for simplicity in Glance
+                        .background(shortNameBackground)
                         .padding(8.dp)
-                    //.clickable(onLineClickAction)
                 ) {
                     Text(
                         text = line.shortName,
@@ -183,7 +173,7 @@ fun WidgetAppBar(
 // Helper to resolve drawables for Glance
 private fun getDirectionDrawable(direction: Direction): Int {
     return when (direction) {
-        Direction.Forward -> R.drawable.turn_sharp_right // Replace with actual drawable IDs
+        Direction.Forward -> R.drawable.turn_sharp_right
         Direction.Backward -> R.drawable.u_turn_left
         Direction.ForwardAndBackward -> R.drawable.swap_calls
     }

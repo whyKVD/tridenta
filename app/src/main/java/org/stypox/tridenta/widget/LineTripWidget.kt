@@ -34,7 +34,6 @@ import org.stypox.tridenta.widget.actions.NextTripAction
 import org.stypox.tridenta.widget.actions.PrevTripAction
 import org.stypox.tridenta.widget.actions.ReloadTripAction
 import org.stypox.tridenta.widget.actions.ToggleDirectionAction
-import org.stypox.tridenta.widget.theme.SmallCircularProgressIndicatorGlance
 import org.stypox.tridenta.widget.ui.LineTripsWidgetScreen
 import org.stypox.tridenta.widget.ui.TripViewGlance
 import java.time.OffsetDateTime
@@ -56,7 +55,6 @@ class LineTripWidget : GlanceAppWidget() {
 
             GlanceTheme {
                 when (state) {
-                    is WidgetState.Loading -> SmallCircularProgressIndicatorGlance()
                     is WidgetState.Available ->
                         LineTripsWidgetScreen(
                             line = state.line,

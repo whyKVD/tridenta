@@ -44,7 +44,7 @@ interface WidgetEntryPoint {
             logWarning("index must be positive")
             return
         }
-        if (index >= state.tripsInDayCount - 1) {
+        if (index > state.tripsInDayCount - 1) {
             logWarning("index must be less than tripsInDayCount")
             return
         }

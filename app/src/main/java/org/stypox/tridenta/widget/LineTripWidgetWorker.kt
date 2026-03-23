@@ -55,7 +55,7 @@ class LineTripWidgetWorker(
                     context,
                     LineTripWidgetStateDefinition,
                     glanceId
-                ) { WidgetState.Loading }
+                ) { oldState -> if (oldState is WidgetState.Available) oldState.copy(loading = true) else oldState }
                 LineTripWidget().update(context, glanceId)
 
                 // TODO Retrieve the updated state
@@ -83,20 +83,20 @@ class LineTripWidgetWorker(
                     context,
                     LineTripWidgetStateDefinition,
                     glanceId
-                ) {
+                ) { oldState ->
+                    oldState as WidgetState.Available
                     if (trip != null) {
-                        WidgetState.Available(
-                            currentState.line,
-                            trip,
-                            referenceDateTime,
-                            tripsInDayCount,
-                            tripIndex,
+                        oldState.copy(
+                            trip = trip,
+                            referenceDateTime = referenceDateTime,
+                            tripsInDayCount = tripsInDayCount,
+                            tripIndex = tripIndex,
                             prevEnabled = tripIndex > 0,
                             nextEnabled = tripIndex < tripsInDayCount - 1,
-                            currentState.directionFilter,
+                            loading = false
                         )
                     } else {
-                        WidgetState.Unavailable(message = "Something went wrong")
+                        oldState.copy(error = true, loading = false)
                     }
                 }
             }

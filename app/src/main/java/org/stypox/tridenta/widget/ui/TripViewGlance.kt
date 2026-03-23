@@ -10,7 +10,6 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
-import androidx.glance.Visibility
 import androidx.glance.action.Action
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -33,7 +32,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
-import androidx.glance.visibility
 import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
@@ -161,7 +159,11 @@ fun TripViewGlance(
 }
 
 @Composable
-fun StopLineTypeIcon(stopLineType: StopLineType,context: Context, modifier: GlanceModifier = GlanceModifier) {
+fun StopLineTypeIcon(
+    stopLineType: StopLineType,
+    context: Context,
+    modifier: GlanceModifier = GlanceModifier
+) {
     Image(
         provider = ImageProvider(
             when (stopLineType) {
@@ -179,6 +181,7 @@ fun StopLineTypeIcon(stopLineType: StopLineType,context: Context, modifier: Glan
         modifier = modifier,
     )
 }
+
 @Composable
 fun DirectionIconGlance(
     direction: Direction,
@@ -271,7 +274,7 @@ private fun TripViewTopRowGlance(
         }
 
         Column {
-            StopLineTypeIcon(trip.type,context)
+            StopLineTypeIcon(trip.type, context)
             DirectionIconGlance(trip.direction, context)
         }
     }
@@ -290,7 +293,10 @@ private fun TripViewBottomRowGlance(
     val context = LocalContext.current
     val buttonModifier = GlanceModifier.size(48.dp)
         .cornerRadius(12.dp)
-        .background(GlanceTheme.colors.primary)
+        .background(GlanceTheme.colors.primaryContainer)
+    val buttonModifierDisabled = buttonModifier.background(
+        GlanceTheme.colors.primaryContainer.getColor(context).copy(alpha = 0.5f)
+    )
 
     // Widgets don't support FloatingActionButtons. Use standard Buttons or Images.
     Row(
@@ -302,18 +308,19 @@ private fun TripViewBottomRowGlance(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = if (prevEnabled) buttonModifier.clickable(onPrevAction) else buttonModifier.visibility(
-                Visibility.Invisible
-            )
+            modifier = if (prevEnabled) buttonModifier.clickable(onPrevAction) else buttonModifierDisabled
         ) {
             Image(
                 provider = ImageProvider(R.drawable.arrow_left),
                 contentDescription = context.getString(R.string.previous),
                 modifier = GlanceModifier
-                    .size(32.dp)
+                    .size(32.dp),
+                colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimaryContainer),
+                //alpha = if (prevEnabled) 1.0f else 0.5f //TODO upgrade to glance 1.2 for this feature
             )
         }
-        Spacer(GlanceModifier.defaultWeight())
+
+                    //is WidgetState.Loading -> SmallCircularProgressIndicatorGlance() Spacer(GlanceModifier.defaultWeight())
 
 
         Box(
@@ -330,7 +337,8 @@ private fun TripViewBottomRowGlance(
                     provider = ImageProvider(R.drawable.refresh),
                     contentDescription = context.getString(R.string.reload),
                     modifier = GlanceModifier
-                        .size(24.dp)
+                        .size(24.dp),
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimaryContainer)
                 )
             }
         }
@@ -338,14 +346,14 @@ private fun TripViewBottomRowGlance(
 
         Box(
             contentAlignment = Alignment.Center,
-            modifier = if (nextEnabled) buttonModifier.clickable(onNextAction) else buttonModifier.visibility(
-                Visibility.Invisible
-            )
+            modifier = if (nextEnabled) buttonModifier.clickable(onNextAction) else buttonModifierDisabled
         ) {
             Image(
                 provider = ImageProvider(R.drawable.arrow_right),
                 contentDescription = context.getString(R.string.next),
-                GlanceModifier.size(32.dp)
+                GlanceModifier.size(32.dp),
+                colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimaryContainer)
+                //alpha = if (prevEnabled) 1.0f else 0.5f //TODO upgrade to glance 1.2 for this feature
             )
         }
     }

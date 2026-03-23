@@ -156,6 +156,7 @@ class WidgetConfigurationActivity :
                     tripIndex,
                     prevEnabled = tripIndex > 0,
                     nextEnabled = tripIndex < tripsInDayCount - 1,
+                    loading = false,
                 )
             }
             LineTripWidget().update(this@WidgetConfigurationActivity, glanceId)
