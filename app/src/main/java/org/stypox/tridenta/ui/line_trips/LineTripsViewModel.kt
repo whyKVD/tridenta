@@ -78,7 +78,7 @@ class LineTripsViewModel @Inject constructor(
         mutableUiState.update { it.copy(directionFilter = newDirectionFilter) }
 
         if (newDirectionFilter == Direction.ForwardAndBackward) {
-            val state = uiState.value;
+            val state = uiState.value
             if (state.trip == null) {
                 // the trip can be null if there is no trip in that direction
                 loadIndex(state.tripIndex)
@@ -94,7 +94,7 @@ class LineTripsViewModel @Inject constructor(
             }
 
         } else {
-            val state = uiState.value;
+            val state = uiState.value
             if (state.trip?.direction != newDirectionFilter) {
                 // we need to load another trip, since the current one has the wrong direction
                 loadIndex(state.tripIndex)

@@ -252,10 +252,7 @@ private fun TripViewTopRowGlance(
             )
 
             val dateOrDelayText = if (trip.lastEventReceivedAt == null) {
-                trip.stopTimes.asSequence()
-                    .map { it.arrivalTime }
-                    .filterNotNull()
-                    .firstOrNull()
+                trip.stopTimes.firstNotNullOfOrNull { it.arrivalTime }
                     ?.let { firstArrival -> formatDateFull(firstArrival) }
                     ?: context.getString(R.string.no_date_time_information)
             } else {
@@ -319,8 +316,7 @@ private fun TripViewBottomRowGlance(
                 //alpha = if (prevEnabled) 1.0f else 0.5f //TODO upgrade to glance 1.2 for this feature
             )
         }
-
-                    //is WidgetState.Loading -> SmallCircularProgressIndicatorGlance() Spacer(GlanceModifier.defaultWeight())
+        Spacer(GlanceModifier.defaultWeight())
 
 
         Box(
@@ -329,6 +325,7 @@ private fun TripViewBottomRowGlance(
         ) {
             if (loading) {
                 CircularProgressIndicator(
+                    color = GlanceTheme.colors.onPrimaryContainer,
                     modifier = GlanceModifier.defaultWeight()
                         .size(24.dp)
                 )

@@ -1,6 +1,5 @@
 package org.stypox.tridenta.widget
 
-import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
@@ -78,7 +77,7 @@ class WidgetConfigurationActivity :
 
         // Set the result to CANCELED right away. This ensures that if the user backs
         // out of the activity without picking a line, the widget is removed from the home screen.
-        setResult(Activity.RESULT_CANCELED)
+        setResult(RESULT_CANCELED)
 
         setContent {
             val linesViewModel: LinesViewModel = hiltViewModel()
@@ -166,7 +165,7 @@ class WidgetConfigurationActivity :
                 val resultValue = Intent().apply {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                 }
-                setResult(Activity.RESULT_OK, resultValue)
+                setResult(RESULT_OK, resultValue)
                 finish()
             }
         }

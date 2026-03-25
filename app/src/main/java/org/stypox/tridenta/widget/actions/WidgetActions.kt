@@ -359,16 +359,15 @@ class ToggleDirectionAction : ActionCallback {
         LineTripWidget().update(context, glanceId)
 
         if (newDirectionFilter == Direction.ForwardAndBackward) {
-            val state = currentState
-            if (state.trip == null) {
+            if (currentState.trip == null) {
                 // the trip can be null if there is no trip in that direction
-                hiltEntryPoint.loadIndex(state.tripIndex, glanceId, context)
+                hiltEntryPoint.loadIndex(currentState.tripIndex, glanceId, context)
             } else {
                 // no need to load the trip, as it's already loaded
                 updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
-                    state.copy(
-                        prevEnabled = state.tripIndex > 0,
-                        nextEnabled = state.tripIndex < state.tripsInDayCount - 1,
+                    currentState.copy(
+                        prevEnabled = currentState.tripIndex > 0,
+                        nextEnabled = currentState.tripIndex < currentState.tripsInDayCount - 1,
                         directionFilter = newDirectionFilter,
                     )
                 }

@@ -14,7 +14,7 @@ import androidx.glance.preview.Preview
 @Composable
 fun SmallCircularProgressIndicatorGlance(modifier: GlanceModifier = GlanceModifier) {
     CircularProgressIndicator(
-        color = GlanceTheme.colors.onSurface,
+        color = GlanceTheme.colors.onPrimaryContainer,
         modifier = modifier.size(16.dp),
     )
 }
