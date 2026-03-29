@@ -52,7 +52,7 @@ fun TripViewStopsGlance(
     val context = LocalContext.current
     LazyColumn(
         modifier = modifier,
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         itemsIndexed(trip.stopTimes) { index, stopTime ->
             TripViewStopItemGlance(
@@ -99,11 +99,6 @@ fun TripViewStopsGlance(
                 ),
                 modifier = GlanceModifier.padding(8.dp)
             )
-        }
-
-        item {
-            // space for FABs
-            Spacer(modifier = GlanceModifier.size(height = 84.dp, width = 0.dp))
         }
     }
 }

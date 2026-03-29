@@ -68,93 +68,84 @@ fun TripViewGlance(
 ) {
     val context = LocalContext.current
 
-    Box(
+    Column(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
     ) {
-        if (trip != null) {
-            Column(
-                modifier = GlanceModifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TripViewTopRowGlance(
-                    trip = trip,
-                    modifier = GlanceModifier.padding(
-                        start = 12.dp,
-                        top = 4.dp,
-                        end = 12.dp,
-                        bottom = 12.dp
-                    ).fillMaxWidth()
-                )
+        Box(modifier = GlanceModifier.defaultWeight().fillMaxWidth(), contentAlignment = Alignment.Center) {
+            if (trip != null) {
+                Column(
+                    modifier = GlanceModifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    TripViewTopRowGlance(
+                        trip = trip,
+                        modifier = GlanceModifier.padding(
+                            start = 12.dp,
+                            top = 4.dp,
+                            end = 12.dp,
+                            bottom = 12.dp
+                        ).fillMaxWidth()
+                    )
 
-                if (error) {
-                    // Replaced your custom ErrorRow with a simple Glance Text for the widget
-                    Text(
-                        text = context.getString(R.string.error),
-                        style = TextStyle(color = GlanceTheme.colors.error),
-                        modifier = GlanceModifier.padding(8.dp)
+                    if (error) {
+                        Text(
+                            text = context.getString(R.string.error),
+                            style = TextStyle(color = GlanceTheme.colors.error),
+                            modifier = GlanceModifier.padding(8.dp)
+                        )
+                    }
+
+                    TripViewStopsGlance(
+                        trip = trip,
+                        stopIdToHighlight = stopIdToHighlight,
+                        stopTypeToHighlight = stopTypeToHighlight,
+                        modifier = GlanceModifier.defaultWeight() // Crucial for lists in Columns
                     )
                 }
-
-                // Assuming this is already refactored to be Glance-compliant!
-                TripViewStopsGlance(
-                    trip = trip,
-                    stopIdToHighlight = stopIdToHighlight,
-                    stopTypeToHighlight = stopTypeToHighlight,
-                    modifier = GlanceModifier.defaultWeight() // Crucial for lists in Columns
-                )
-            }
-
-        } else if (loading) {
-            CircularProgressIndicator()
-
-        } else if (error) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = context.getString(R.string.error),
-                    style = TextStyle(color = GlanceTheme.colors.error)
-                )
-                Button(text = context.getString(R.string.reload), onClick = onReloadAction)
-            }
-
-        } else {
-            Column(
-                modifier = GlanceModifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = context.getString(R.string.no_trip_found),
-                    style = TextStyle(
-                        fontWeight = FontWeight.Bold,
-                        color = GlanceTheme.colors.onBackground
-                    ),
-                    modifier = GlanceModifier.padding(bottom = 4.dp)
-                )
-                Text(
-                    text = context.getString(R.string.no_trip_found_description),
-                    style = TextStyle(
-                        textAlign = TextAlign.Center,
-                        color = GlanceTheme.colors.onBackground
+            } else if (loading) {
+                CircularProgressIndicator()
+            } else if (error) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = context.getString(R.string.error),
+                        style = TextStyle(color = GlanceTheme.colors.error)
                     )
-                )
+                    Button(text = context.getString(R.string.reload), onClick = onReloadAction)
+                }
+            } else {
+                Column(
+                    modifier = GlanceModifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = context.getString(R.string.no_trip_found),
+                        style = TextStyle(
+                            fontWeight = FontWeight.Bold,
+                            color = GlanceTheme.colors.onBackground
+                        ),
+                        modifier = GlanceModifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = context.getString(R.string.no_trip_found_description),
+                        style = TextStyle(
+                            textAlign = TextAlign.Center,
+                            color = GlanceTheme.colors.onBackground
+                        )
+                    )
+                }
             }
         }
 
         // Bottom Row is aligned to the bottom using a Box setup
-        Box(
-            modifier = GlanceModifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            TripViewBottomRowGlance(
-                loading = loading,
-                onReloadAction = onReloadAction,
-                onPrevAction = onPrevAction,
-                onNextAction = onNextAction,
-                prevEnabled = prevEnabled,
-                nextEnabled = nextEnabled,
-                modifier = GlanceModifier.fillMaxWidth()
-            )
-        }
+        TripViewBottomRowGlance(
+            loading = loading,
+            onReloadAction = onReloadAction,
+            onPrevAction = onPrevAction,
+            onNextAction = onNextAction,
+            prevEnabled = prevEnabled,
+            nextEnabled = nextEnabled,
+            modifier = GlanceModifier.fillMaxWidth()
+        )
     }
 }
 
