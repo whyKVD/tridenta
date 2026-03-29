@@ -27,5 +27,17 @@ sealed interface WidgetState {
     ) : WidgetState
 
     @Serializable
+    data class StopTripsAvailable(
+        val stop: DbStop? = null, // <- when null, nothing was loaded yet
+        val tripIndex: Int = 0, // <- makes sense only if trip != null
+        val trip: UiTrip? = null,
+        val prevEnabled: Boolean = false,
+        val nextEnabled: Boolean = false,
+        @Serializable(with = ZonedDateTimeSerializer::class)
+        val referenceDateTime: ZonedDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID), // <- reuse only when trip != null
+        val loading: Boolean = true,
+        val error: Boolean = false,
+    ) : WidgetState
+    @Serializable
     data class Unavailable(val message: String) : WidgetState
 }

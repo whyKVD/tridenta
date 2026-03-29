@@ -14,7 +14,11 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
+import androidx.glance.background
 import androidx.glance.currentState
+import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
+import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.preview.ExperimentalGlancePreviewApi
 import androidx.glance.preview.Preview
@@ -35,6 +39,7 @@ import org.stypox.tridenta.widget.actions.PrevTripAction
 import org.stypox.tridenta.widget.actions.ReloadTripAction
 import org.stypox.tridenta.widget.actions.ToggleDirectionAction
 import org.stypox.tridenta.widget.ui.LineTripsWidgetScreen
+import org.stypox.tridenta.widget.ui.StopTripsScreenGlance
 import org.stypox.tridenta.widget.ui.TripViewGlance
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -72,11 +77,32 @@ class LineTripWidget : GlanceAppWidget() {
                             isFavorite = state.line?.isFavorite ?: false
                         )
 
-                    is WidgetState.Unavailable -> Text(
-                        text = context.getString(R.string.error),
-                        style = TextStyle(color = GlanceTheme.colors.error),
-                        modifier = GlanceModifier.padding(8.dp)
-                    )
+                    is WidgetState.StopTripsAvailable -> {
+                        StopTripsScreenGlance(
+                            stop = state.stop,
+                            trip = state.trip,
+                            error = state.error,
+                            loading = state.loading,
+                            onReloadAction = actionRunCallback<ReloadTripAction>(),
+                            onPrevAction = actionRunCallback<PrevTripAction>(),
+                            onNextAction = actionRunCallback<NextTripAction>(),
+                            onLineClickAction = actionStartActivity(configIntent),
+                            prevEnabled = state.prevEnabled,
+                            nextEnabled = state.nextEnabled,
+                            isFavorite = state.stop?.isFavorite ?: false
+                        )
+                    }
+
+                    is WidgetState.Unavailable -> Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.background)
+                    ) {
+                        Text(
+                            text = context.getString(R.string.error),
+                            style = TextStyle(color = GlanceTheme.colors.error),
+                            modifier = GlanceModifier.padding(8.dp)
+                        )
+                    }
                 }
             }
         }
