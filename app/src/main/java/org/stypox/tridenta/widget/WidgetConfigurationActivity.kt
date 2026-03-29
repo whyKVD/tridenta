@@ -147,7 +147,7 @@ class WidgetConfigurationActivity :
 
             // 3. Save the selected data to this specific widget's Preferences
             updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
-                WidgetState.Available(
+                WidgetState.LineTripsAvailable(
                     line,
                     trip,
                     ZonedDateTime.now(),

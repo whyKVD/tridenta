@@ -55,7 +55,7 @@ class LineTripWidget : GlanceAppWidget() {
 
             GlanceTheme {
                 when (state) {
-                    is WidgetState.Available ->
+                    is WidgetState.LineTripsAvailable ->
                         LineTripsWidgetScreen(
                             line = state.line,
                             trip = state.trip,
@@ -67,8 +67,6 @@ class LineTripWidget : GlanceAppWidget() {
                             onLineClickAction = actionStartActivity(configIntent),
                             directionFilter = state.directionFilter,
                             onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
-                            stopIdToHighlight = null,
-                            stopTypeToHighlight = null,
                             prevEnabled = state.prevEnabled,
                             nextEnabled = state.nextEnabled,
                             isFavorite = state.line?.isFavorite ?: false

@@ -1,7 +1,9 @@
 package org.stypox.tridenta.widget
 
 import kotlinx.serialization.Serializable
+import org.stypox.tridenta.db.data.DbStop
 import org.stypox.tridenta.enums.Direction
+import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.repo.data.UiLine
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.util.ZonedDateTimeSerializer
@@ -10,7 +12,7 @@ import java.time.ZonedDateTime
 @Serializable
 sealed interface WidgetState {
     @Serializable
-    data class Available(
+    data class LineTripsAvailable(
         val line: UiLine?,
         val trip: UiTrip?,
         @Serializable(with = ZonedDateTimeSerializer::class)
