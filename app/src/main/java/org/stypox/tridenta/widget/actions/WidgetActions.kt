@@ -14,12 +14,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.stypox.tridenta.db.HistoryDao
 import org.stypox.tridenta.enums.Direction
+import org.stypox.tridenta.enums.StopLineType
 import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.log.logError
 import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.log.logWarning
 import org.stypox.tridenta.repo.LineTripsRepository
 import org.stypox.tridenta.repo.LinesRepository
+import org.stypox.tridenta.repo.StopTripsRepository
+import org.stypox.tridenta.repo.StopsRepository
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.widget.LineTripWidget
 import org.stypox.tridenta.widget.LineTripWidgetStateDefinition
@@ -39,7 +42,7 @@ interface WidgetEntryPoint {
             context,
             LineTripWidgetStateDefinition, glanceId
         )
-        if (state !is WidgetState.Available) return
+        if (state !is WidgetState.LineTripsAvailable) return
         if (index < 0) {
             logWarning("index must be positive")
             return
@@ -56,21 +59,21 @@ interface WidgetEntryPoint {
         // condition will be false e.g. when there are no trips in a day (but not only for that)
         loadIndexAsync(index, state, context, glanceId)
         updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { s ->
-            if (s is WidgetState.Available) s.copy(loading = false) else s
+            if (s is WidgetState.LineTripsAvailable) s.copy(loading = false) else s
         }
         LineTripWidget().update(context, glanceId)
     }
 
     private suspend fun loadIndexAsync(
         index: Int,
-        state: WidgetState.Available,
+        state: WidgetState.LineTripsAvailable,
         context: Context,
         glanceId: GlanceId
     ) {
         // hide the current trip, as it's going to change
         val prevState = state
         updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
-            if (state is WidgetState.Available) state.copy(
+            if (state is WidgetState.LineTripsAvailable) state.copy(
                 tripIndex = index,
                 trip = null,
                 prevEnabled = index > 0,
@@ -95,13 +98,13 @@ interface WidgetEntryPoint {
 
     suspend fun setReferenceDateTimeAsync(
         referenceDateTimeCurrentZone: ZonedDateTime,
-        state: WidgetState.Available,
+        state: WidgetState.LineTripsAvailable,
         context: Context,
         glanceId: GlanceId
     ) {
         val referenceDateTime = referenceDateTimeCurrentZone.withZoneSameInstant(ROME_ZONE_ID)
         updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
-            if (state is WidgetState.Available) state.copy(
+            if (state is WidgetState.LineTripsAvailable) state.copy(
                 tripsInDayCount = 0,
                 tripIndex = 0,
                 trip = null,
@@ -131,7 +134,7 @@ interface WidgetEntryPoint {
             }
         }
         updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
-            if (state is WidgetState.Available) state.copy(
+            if (state is WidgetState.LineTripsAvailable) state.copy(
                 tripsInDayCount = tripsInDayCount, tripIndex = tripIndex, trip = trip,
                 prevEnabled = tripIndex > 0,
                 nextEnabled = tripIndex < tripsInDayCount - 1,
@@ -147,7 +150,7 @@ interface WidgetEntryPoint {
             context,
             LineTripWidgetStateDefinition, glanceId
         )
-        if (state !is WidgetState.Available) return
+        if (state !is WidgetState.LineTripsAvailable) return
         val previousTrip = state.trip
         if (previousTrip == null) {// this could happen if an error happened while loading initial/more trips
             if (state.tripsInDayCount > 0) {
@@ -193,7 +196,7 @@ interface WidgetEntryPoint {
 
     private suspend fun loadIndexNoFilterAsync(
         index: Int,
-        state: WidgetState.Available,
+        state: WidgetState.LineTripsAvailable,
         context: Context,
         glanceId: GlanceId
     ): Pair<UiTrip?, Boolean> {
@@ -214,7 +217,7 @@ interface WidgetEntryPoint {
             }
         }
         updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
-            if (state is WidgetState.Available) state.copy(
+            if (state is WidgetState.LineTripsAvailable) state.copy(
                 trip = res.first,
                 error = res.first == null
             ) else state
@@ -226,7 +229,7 @@ interface WidgetEntryPoint {
     }
 
     private suspend fun loadIndexDirectionAsync(
-        index: Int, prevState: WidgetState.Available, context: Context, glanceId: GlanceId
+        index: Int, prevState: WidgetState.LineTripsAvailable, context: Context, glanceId: GlanceId
     ): Pair<UiTrip?, Boolean> {
         val res = withContext(Dispatchers.IO) {
             try {
@@ -251,7 +254,7 @@ interface WidgetEntryPoint {
             // no trip could be loaded in the set direction, restore previous state,
             // but update prevEnabled or nextEnabled
             updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
-                if (state is WidgetState.Available) state.copy(
+                if (state is WidgetState.LineTripsAvailable) state.copy(
                     tripIndex = prevState.tripIndex,
                     trip = prevState.trip,
                     prevEnabled = if (index < prevState.tripIndex) false else prevState.prevEnabled,
@@ -265,7 +268,7 @@ interface WidgetEntryPoint {
         } else {
             val (trip, newIndex, loadedFromNetwork) = res
             updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
-                if (state is WidgetState.Available) state.copy(
+                if (state is WidgetState.LineTripsAvailable) state.copy(
                     tripIndex = newIndex,
                     trip = trip,
                     prevEnabled = newIndex > 0,
@@ -279,6 +282,225 @@ interface WidgetEntryPoint {
     }
 }
 
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface WidgetStopTripsEntryPoint {
+    fun stopsRepository(): StopsRepository
+    fun tripsRepository(): StopTripsRepository
+    fun historyDao(): HistoryDao
+
+    suspend fun loadStop(
+        stopId: Int,
+        stopType: StopLineType,
+        context: Context,
+        glanceId: GlanceId
+    ) {
+        val stop = withContext(Dispatchers.IO) {
+            try {
+                stopsRepository().getDbStop(stopId, stopType).also {
+                    if (it == null) {
+                        logError(
+                            "DB stop (${stopId}, ${stopType}) not found"
+                        )
+                    }
+
+                    // register a view for this stop (assuming loadStop is called once)
+                    historyDao().registerAccessed(false, stopId, stopType)
+                }
+            } catch (e: Throwable) {
+                logError("Could not load DB stop (${stopId}, ${stopType})", e)
+                null
+            }
+        }
+        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+            if (stop == null) {
+                WidgetState.Unavailable("Some error has occurred")
+            } else {
+                WidgetState.StopTripsAvailable(stop = stop)
+            }
+        }
+    }
+
+    suspend fun setReferenceDateTimeAsync(
+        referenceDateTimeCurrentZone: ZonedDateTime,
+        stopId: Int,
+        stopType: StopLineType,
+        context: Context,
+        glanceId: GlanceId
+    ) {
+        val referenceDateTime = referenceDateTimeCurrentZone.withZoneSameInstant(ROME_ZONE_ID)
+        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { oldState ->
+            if (oldState is WidgetState.StopTripsAvailable) oldState.copy(
+                tripIndex = 0,
+                trip = null,
+                prevEnabled = false,
+                nextEnabled = false,
+                referenceDateTime = referenceDateTime
+            ) else oldState
+        }
+        LineTripWidget().update(context, glanceId)
+
+        val tripsAtDateTimeList = withContext(Dispatchers.IO) {
+            try {
+                tripsRepository().getTrips(
+                    stopId = stopId,
+                    stopType = stopType,
+                    referenceDateTime = referenceDateTime
+                )
+            } catch (e: Throwable) {
+                logError(
+                    "Could not load trips for DB stop (${stopId}, " +
+                            "${stopType}) at time $referenceDateTime",
+                    e
+                )
+                null
+            }
+        }
+
+        if (tripsAtDateTimeList == null) {
+            updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { oldState ->
+                if (oldState is WidgetState.StopTripsAvailable) oldState.copy(error = true) else oldState
+            }
+        } else {
+            // show the first trip, which should be the next one arriving at the stop;
+            // requestedByUser is false since the trip is surely up-to-date, as it was just fetched
+            loadIndexAsync(0, false, stopId, stopType, context, glanceId)
+        }
+    }
+
+    suspend fun loadIndex(
+        index: Int,
+        context: Context,
+        glanceId: GlanceId,
+        stopId: Int,
+        stopType: StopLineType
+    ) {
+        val tripsAtDateTimeList = tripsRepository().getTrips(
+            stopId = stopId, stopType = stopType,
+            ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+        )
+        if (index >= 0 && index < (tripsAtDateTimeList.tripCount)) {
+            // only cancel any currently running job if there is something to do; the above
+            // condition will be false e.g. when there are no trips in a day (but not only for that)
+            loadIndexAsync(index, true, stopId, stopType, context, glanceId)
+        }
+    }
+
+    private suspend fun loadIndexAsync(
+        index: Int,
+        requestedByUser: Boolean,
+        stopId: Int,
+        stopType: StopLineType,
+        context: Context,
+        glanceId: GlanceId
+    ) {
+        val tripsAtDateTimeList = tripsRepository().getTrips(
+            stopId = stopId, stopType = stopType,
+            ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+        )
+        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { oldState ->
+            if (oldState is WidgetState.StopTripsAvailable) oldState.copy(
+                tripIndex = index,
+                trip = null,
+                prevEnabled = index > 0,
+                nextEnabled = index < (tripsAtDateTimeList.tripCount) - 1,
+            ) else oldState
+        }
+        LineTripWidget().update(context, glanceId)
+
+        val trip = withContext(Dispatchers.IO) {
+            try {
+                tripsAtDateTimeList.getUiTripAtIndex(index)
+            } catch (e: Throwable) {
+                logError(
+                    "Could not load trip at index $index for DB stop " +
+                            "(${stopId}, ${stopType})",
+                    e
+                )
+                null
+            }
+        }
+        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { oldState ->
+            if (oldState is WidgetState.StopTripsAvailable) oldState.copy(
+                trip = trip,
+                loading = false,
+                error = trip == null,
+            ) else oldState
+        }
+        LineTripWidget().update(context, glanceId)
+
+        if (requestedByUser && trip != null && trip.completedStops < trip.stopTimes.size) {
+            // after showing the (possibly) outdated trip fast, reload it to show latest updates
+            // (but reload it only if there actually is a trip and it is not completed)
+            onReloadAsync(context, glanceId, stopId, stopType)
+        }
+    }
+
+
+    suspend fun onReloadAsync(
+        context: Context,
+        glanceId: GlanceId,
+        stopId: Int,
+        stopType: StopLineType
+    ) {
+        val currentState = getAppWidgetState(
+            context,
+            LineTripWidgetStateDefinition, glanceId
+        )
+        if (currentState !is WidgetState.StopTripsAvailable) return
+        val previousTrip = currentState.trip
+        if (previousTrip == null) {
+            // initial trips failed loading, try to load again the current day
+            setReferenceDateTimeAsync(
+                currentState.referenceDateTime,
+                stopId,
+                stopType,
+                context,
+                glanceId
+            )
+            return
+        }
+        val tripsAtDateTimeList = tripsRepository().getTrips(
+            stopId = stopId, stopType = stopType,
+            ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+        )
+
+        val trip = withContext(Dispatchers.IO) {
+            try {
+                tripsAtDateTimeList.reloadUiTrip(
+                    uiTrip = previousTrip,
+                    index = currentState.tripIndex,
+                    referenceDateTime = currentState.referenceDateTime
+                )
+            } catch (e: Throwable) {
+                logError(
+                    "Could not load trip ${previousTrip.tripId} for DB stop " +
+                            "(${stopId}, ${stopType})",
+                    e
+                )
+                null
+            }
+        }
+
+        if (trip == null) {
+            // keep previous trip intact, we don't want to hide information that we do have!
+            updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { oldState ->
+                if (oldState is WidgetState.StopTripsAvailable) oldState.copy(
+                    error = true
+                ) else oldState
+            }
+            LineTripWidget().update(context, glanceId)
+        } else {
+            updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { oldState ->
+                if (oldState is WidgetState.StopTripsAvailable) oldState.copy(
+                    trip = trip
+                ) else oldState
+            }
+            LineTripWidget().update(context, glanceId)
+        }
+    }
+}
+
 class NextTripAction : ActionCallback {
     override suspend fun onAction(
         context: Context, glanceId: GlanceId, parameters: ActionParameters
@@ -287,10 +509,31 @@ class NextTripAction : ActionCallback {
             context,
             LineTripWidgetStateDefinition, glanceId
         )
-        if (currentState !is WidgetState.Available) return
-        val hiltEntryPoint =
-            EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
-        hiltEntryPoint.loadIndex(currentState.tripIndex + 1, glanceId, context)
+        when (currentState) {
+            is WidgetState.LineTripsAvailable -> {
+                val hiltEntryPoint =
+                    EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+                hiltEntryPoint.loadIndex(currentState.tripIndex + 1, glanceId, context)
+            }
+
+            is WidgetState.StopTripsAvailable -> {
+                if (currentState.stop == null) return
+                val hiltEntryPoint =
+                    EntryPointAccessors.fromApplication(
+                        context,
+                        WidgetStopTripsEntryPoint::class.java
+                    )
+                hiltEntryPoint.loadIndex(
+                    currentState.tripIndex + 1,
+                    context,
+                    glanceId,
+                    currentState.stop.stopId,
+                    currentState.stop.type
+                )
+            }
+
+            else -> {}
+        }
 
         logInfo("NextTripAction performed")
     }
@@ -304,10 +547,31 @@ class PrevTripAction : ActionCallback {
             context,
             LineTripWidgetStateDefinition, glanceId
         )
-        if (currentState !is WidgetState.Available) return
-        val hiltEntryPoint =
-            EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
-        hiltEntryPoint.loadIndex(currentState.tripIndex - 1, glanceId, context)
+        when (currentState) {
+            is WidgetState.LineTripsAvailable -> {
+                val hiltEntryPoint =
+                    EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+                hiltEntryPoint.loadIndex(currentState.tripIndex - 1, glanceId, context)
+            }
+
+            is WidgetState.StopTripsAvailable -> {
+                if (currentState.stop == null) return
+                val hiltEntryPoint =
+                    EntryPointAccessors.fromApplication(
+                        context,
+                        WidgetStopTripsEntryPoint::class.java
+                    )
+                hiltEntryPoint.loadIndex(
+                    currentState.tripIndex - 1,
+                    context,
+                    glanceId,
+                    currentState.stop.stopId,
+                    currentState.stop.type
+                )
+            }
+
+            else -> {}
+        }
 
         logInfo("PrevTripAction performed")
     }
@@ -321,18 +585,46 @@ class ReloadTripAction : ActionCallback {
             context,
             LineTripWidgetStateDefinition, glanceId
         )
-        if (currentState !is WidgetState.Available) return
-        val hiltEntryPoint =
-            EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
-        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
-            currentState.copy(loading = true)
+        when (currentState) {
+            is WidgetState.LineTripsAvailable -> {
+                val hiltEntryPoint =
+                    EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    currentState.copy(loading = true)
+                }
+                LineTripWidget().update(context, glanceId)
+                hiltEntryPoint.onReloadAsync(context, glanceId)
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
+                    if (state is WidgetState.LineTripsAvailable) state.copy(loading = false) else state
+                }
+                LineTripWidget().update(context, glanceId)
+            }
+
+            is WidgetState.StopTripsAvailable -> {
+                if (currentState.stop == null) return
+                val hiltEntryPoint =
+                    EntryPointAccessors.fromApplication(
+                        context,
+                        WidgetStopTripsEntryPoint::class.java
+                    )
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    currentState.copy(loading = true)
+                }
+                LineTripWidget().update(context, glanceId)
+                hiltEntryPoint.onReloadAsync(
+                    context,
+                    glanceId,
+                    currentState.stop.stopId,
+                    currentState.stop.type
+                )
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
+                    if (state is WidgetState.StopTripsAvailable) state.copy(loading = false) else state
+                }
+                LineTripWidget().update(context, glanceId)
+            }
+
+            else -> {}
         }
-        LineTripWidget().update(context, glanceId)
-        hiltEntryPoint.onReloadAsync(context, glanceId)
-        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) { state ->
-            if (state is WidgetState.Available) state.copy(loading = false) else state
-        }
-        LineTripWidget().update(context, glanceId)
     }
 }
 
@@ -345,7 +637,7 @@ class ToggleDirectionAction : ActionCallback {
             LineTripWidgetStateDefinition, glanceId
         )
 
-        if (currentState !is WidgetState.Available) return
+        if (currentState !is WidgetState.LineTripsAvailable) return
         val hiltEntryPoint =
             EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
         val newDirectionFilter = when (currentState.directionFilter) {
@@ -385,5 +677,37 @@ class ToggleDirectionAction : ActionCallback {
             }
         }
         logInfo("ToggleDirectionAction performed, directionFilter: ${currentState.directionFilter}")
+    }
+}
+
+class OnStopClickAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) {
+        logInfo("OnStopClickAction")
+        val stopId = parameters[WidgetKeys.STOP_ID] ?: return
+        val stopTypeRaw = parameters[WidgetKeys.STOP_TYPE] ?: return
+        val stopType = StopLineType.valueOf(stopTypeRaw)
+        logInfo("OnStopClickAction")
+        val currentState: WidgetState = getAppWidgetState(
+            context,
+            LineTripWidgetStateDefinition, glanceId
+        )
+
+        if (currentState is WidgetState.Unavailable) return
+        val hiltEntryPoint =
+            EntryPointAccessors.fromApplication(context, WidgetStopTripsEntryPoint::class.java)
+        hiltEntryPoint.loadStop(stopId, stopType, context, glanceId)
+        hiltEntryPoint.setReferenceDateTimeAsync(
+            ZonedDateTime.now(),
+            stopId,
+            stopType,
+            context,
+            glanceId
+        )
+
+        LineTripWidget().update(context, glanceId)
     }
 }
