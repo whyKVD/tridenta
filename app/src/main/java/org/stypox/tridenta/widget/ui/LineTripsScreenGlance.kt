@@ -26,7 +26,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import org.stypox.tridenta.R
 import org.stypox.tridenta.enums.Direction
-import org.stypox.tridenta.enums.StopLineType
 import org.stypox.tridenta.repo.data.UiLine
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.util.textColorOnBackground
@@ -41,8 +40,6 @@ fun LineTripsWidgetScreen(
     loading: Boolean,
     prevEnabled: Boolean,
     nextEnabled: Boolean,
-    stopIdToHighlight: Int?,
-    stopTypeToHighlight: StopLineType?,
     isFavorite: Boolean,
     directionFilter: Direction,
     onReloadAction: Action,
@@ -54,7 +51,7 @@ fun LineTripsWidgetScreen(
     Column(
         modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.background)
     ) {
-        WidgetAppBar(
+        LineAppBar(
             line = line,
             isFavorite = isFavorite,
             directionFilter = directionFilter,
@@ -70,14 +67,14 @@ fun LineTripsWidgetScreen(
             onNextAction = onNextAction,
             prevEnabled = prevEnabled,
             nextEnabled = nextEnabled,
-            stopIdToHighlight = stopIdToHighlight,
-            stopTypeToHighlight = stopTypeToHighlight
+            stopIdToHighlight = null,
+            stopTypeToHighlight = null
         )
     }
 }
 
 @Composable
-fun WidgetAppBar(
+fun LineAppBar(
     line: UiLine?,
     isFavorite: Boolean,
     directionFilter: Direction,
@@ -92,6 +89,12 @@ fun WidgetAppBar(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Image(
+            provider = ImageProvider(R.drawable.menu),
+            contentDescription = "menu",
+            modifier = GlanceModifier.clickable(onLineClickAction).padding(end = 8.dp),
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+        )
 
         // 1. The Title (Left Side)
         // defaultWeight() makes the text take up all leftover space,
@@ -103,8 +106,6 @@ fun WidgetAppBar(
             val shortNameBackground = line.color.toLineColor()
             val textColor = textColorOnBackground(shortNameBackground)
             Row(
-                modifier = GlanceModifier
-                    .clickable(onLineClickAction),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
