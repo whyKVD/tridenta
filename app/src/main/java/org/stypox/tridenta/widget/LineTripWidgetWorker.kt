@@ -50,12 +50,12 @@ class LineTripWidgetWorker(
                 context,
                 LineTripWidgetStateDefinition, glanceId
             )
-            if (currentState is WidgetState.Available) {
+            if (currentState is WidgetState.LineTripsAvailable) {
                 updateAppWidgetState(
                     context,
                     LineTripWidgetStateDefinition,
                     glanceId
-                ) { oldState -> if (oldState is WidgetState.Available) oldState.copy(loading = true) else oldState }
+                ) { oldState -> if (oldState is WidgetState.LineTripsAvailable) oldState.copy(loading = true) else oldState }
                 LineTripWidget().update(context, glanceId)
 
                 // TODO Retrieve the updated state
@@ -84,7 +84,7 @@ class LineTripWidgetWorker(
                     LineTripWidgetStateDefinition,
                     glanceId
                 ) { oldState ->
-                    oldState as WidgetState.Available
+                    oldState as WidgetState.LineTripsAvailable
                     if (trip != null) {
                         oldState.copy(
                             trip = trip,
