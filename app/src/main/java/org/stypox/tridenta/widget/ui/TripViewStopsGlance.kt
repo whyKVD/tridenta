@@ -8,11 +8,13 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.action.actionParametersOf
+import androidx.glance.action.clickable
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.itemsIndexed
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Row
-import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
@@ -35,6 +37,8 @@ import org.stypox.tridenta.repo.data.UiStopTime
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.util.formatConcatStrings
 import org.stypox.tridenta.util.formatTime
+import org.stypox.tridenta.widget.actions.OnStopClickAction
+import org.stypox.tridenta.widget.actions.WidgetKeys
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -44,7 +48,6 @@ fun TripViewStopsGlance(
     stopIdToHighlight: Int?,
     stopTypeToHighlight: StopLineType?,
     modifier: GlanceModifier = GlanceModifier,
-    onStopClick: ((DbStop) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     LazyColumn(
@@ -59,6 +62,18 @@ fun TripViewStopsGlance(
                         stopTime.stop.type == stopTypeToHighlight,
                 completed = index < trip.completedStops,
                 stopTime = stopTime,
+                modifier = if (stopTime.stop == null) {
+                    GlanceModifier // not clickable, since there is no stop
+                } else {
+                    GlanceModifier.clickable(
+                        actionRunCallback<OnStopClickAction>(
+                            actionParametersOf(
+                                WidgetKeys.STOP_ID to stopTime.stop.stopId,
+                                WidgetKeys.STOP_TYPE to stopTime.stop.type.name
+                            )
+                        )
+                    )
+                }
             )
         }
 
@@ -360,7 +375,7 @@ fun TripViewStopsPreview() {
                 busId = 886,
             ),
             stopIdToHighlight = null,
-            stopTypeToHighlight = null
+            stopTypeToHighlight = null,
         )
     }
 }
