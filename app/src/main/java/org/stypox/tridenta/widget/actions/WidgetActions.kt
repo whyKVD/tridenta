@@ -511,13 +511,25 @@ class NextTripAction : ActionCallback {
         )
         when (currentState) {
             is WidgetState.LineTripsAvailable -> {
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    currentState.copy(loading = true)
+                }
+                LineTripWidget().update(context, glanceId)
                 val hiltEntryPoint =
                     EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
                 hiltEntryPoint.loadIndex(currentState.tripIndex + 1, glanceId, context)
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                        oldState -> if(oldState is WidgetState.LineTripsAvailable) oldState.copy(loading = false) else oldState
+                }
+                LineTripWidget().update(context, glanceId)
             }
 
             is WidgetState.StopTripsAvailable -> {
                 if (currentState.stop == null) return
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    currentState.copy(loading = true)
+                }
+                LineTripWidget().update(context, glanceId)
                 val hiltEntryPoint =
                     EntryPointAccessors.fromApplication(
                         context,
@@ -530,6 +542,10 @@ class NextTripAction : ActionCallback {
                     currentState.stop.stopId,
                     currentState.stop.type
                 )
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                        oldState -> if(oldState is WidgetState.StopTripsAvailable) oldState.copy(loading = false) else oldState
+                }
+                LineTripWidget().update(context, glanceId)
             }
 
             else -> {}
@@ -549,13 +565,25 @@ class PrevTripAction : ActionCallback {
         )
         when (currentState) {
             is WidgetState.LineTripsAvailable -> {
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    currentState.copy(loading = true)
+                }
+                LineTripWidget().update(context, glanceId)
                 val hiltEntryPoint =
                     EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
                 hiltEntryPoint.loadIndex(currentState.tripIndex - 1, glanceId, context)
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    oldState -> if(oldState is WidgetState.LineTripsAvailable) oldState.copy(loading = false) else oldState
+                }
+                LineTripWidget().update(context, glanceId)
             }
 
             is WidgetState.StopTripsAvailable -> {
                 if (currentState.stop == null) return
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                    currentState.copy(loading = true)
+                }
+                LineTripWidget().update(context, glanceId)
                 val hiltEntryPoint =
                     EntryPointAccessors.fromApplication(
                         context,
@@ -568,6 +596,10 @@ class PrevTripAction : ActionCallback {
                     currentState.stop.stopId,
                     currentState.stop.type
                 )
+                updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                        oldState -> if(oldState is WidgetState.StopTripsAvailable) oldState.copy(loading = false) else oldState
+                }
+                LineTripWidget().update(context, glanceId)
             }
 
             else -> {}
