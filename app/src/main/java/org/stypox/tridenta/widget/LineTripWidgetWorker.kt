@@ -13,6 +13,7 @@ import dagger.hilt.android.EntryPointAccessors
 import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.log.logInfo
 import org.stypox.tridenta.widget.actions.WidgetEntryPoint
+import org.stypox.tridenta.widget.actions.WidgetStopTripsEntryPoint
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
@@ -50,55 +51,106 @@ class LineTripWidgetWorker(
                 context,
                 LineTripWidgetStateDefinition, glanceId
             )
-            if (currentState is WidgetState.LineTripsAvailable) {
-                updateAppWidgetState(
-                    context,
-                    LineTripWidgetStateDefinition,
-                    glanceId
-                ) { oldState -> if (oldState is WidgetState.LineTripsAvailable) oldState.copy(loading = true) else oldState }
-                LineTripWidget().update(context, glanceId)
-
-                // TODO Retrieve the updated state
-                if (currentState.line == null) {
-                    updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
-                        WidgetState.Unavailable("Something went wrong")
+            when (currentState) {
+                is WidgetState.LineTripsAvailable -> {
+                    updateAppWidgetState(
+                        context,
+                        LineTripWidgetStateDefinition,
+                        glanceId
+                    ) { oldState ->
+                        if (oldState is WidgetState.LineTripsAvailable) oldState.copy(
+                            loading = true
+                        ) else oldState
                     }
                     LineTripWidget().update(context, glanceId)
-                    return@forEach
-                }
 
-                val hiltEntryPoint =
-                    EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
-                val tripsRepository = hiltEntryPoint.lineTripsRepository()
-                val referenceDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
-                val (tripsInDayCount, tripIndex, trip) = tripsRepository.getUiTrip(
-                    currentState.line.lineId,
-                    currentState.line.type,
-                    referenceDateTime,
-                    currentState.directionFilter
-                )
-                logInfo("trip: $trip")
+                    if (currentState.line == null) {
+                        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                            WidgetState.Unavailable("Something went wrong")
+                        }
+                        LineTripWidget().update(context, glanceId)
+                        return@forEach
+                    }
 
-                updateAppWidgetState(
-                    context,
-                    LineTripWidgetStateDefinition,
-                    glanceId
-                ) { oldState ->
-                    oldState as WidgetState.LineTripsAvailable
-                    if (trip != null) {
-                        oldState.copy(
-                            trip = trip,
-                            referenceDateTime = referenceDateTime,
-                            tripsInDayCount = tripsInDayCount,
-                            tripIndex = tripIndex,
-                            prevEnabled = tripIndex > 0,
-                            nextEnabled = tripIndex < tripsInDayCount - 1,
-                            loading = false
-                        )
-                    } else {
-                        oldState.copy(error = true, loading = false)
+                    val hiltEntryPoint =
+                        EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+                    val tripsRepository = hiltEntryPoint.lineTripsRepository()
+                    val referenceDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+                    val (tripsInDayCount, tripIndex, trip) = tripsRepository.getUiTrip(
+                        currentState.line.lineId,
+                        currentState.line.type,
+                        referenceDateTime,
+                        currentState.directionFilter
+                    )
+                    logInfo("trip: $trip")
+
+                    updateAppWidgetState(
+                        context,
+                        LineTripWidgetStateDefinition,
+                        glanceId
+                    ) { oldState ->
+                        oldState as WidgetState.LineTripsAvailable
+                        if (trip != null) {
+                            oldState.copy(
+                                trip = trip,
+                                referenceDateTime = referenceDateTime,
+                                tripsInDayCount = tripsInDayCount,
+                                tripIndex = tripIndex,
+                                prevEnabled = tripIndex > 0,
+                                nextEnabled = tripIndex < tripsInDayCount - 1,
+                                loading = false
+                            )
+                        } else {
+                            oldState.copy(error = true, loading = false)
+                        }
                     }
                 }
+
+                is WidgetState.StopTripsAvailable -> {
+                    updateAppWidgetState(
+                        context,
+                        LineTripWidgetStateDefinition,
+                        glanceId
+                    ) { oldState ->
+                        if (oldState is WidgetState.StopTripsAvailable) oldState.copy(
+                            loading = true
+                        ) else oldState
+                    }
+                    LineTripWidget().update(context, glanceId)
+
+                    if (currentState.stop == null) {
+                        updateAppWidgetState(context, LineTripWidgetStateDefinition, glanceId) {
+                            WidgetState.Unavailable("Something went wrong")
+                        }
+                        LineTripWidget().update(context, glanceId)
+                        return@forEach
+                    }
+
+                    val hiltEntryPoint =
+                        EntryPointAccessors.fromApplication(
+                            context,
+                            WidgetStopTripsEntryPoint::class.java
+                        )
+                    val referenceDateTime = ZonedDateTime.now().withZoneSameInstant(ROME_ZONE_ID)
+                    hiltEntryPoint.setReferenceDateTimeAsync(
+                        referenceDateTime,
+                        currentState.stop.stopId,
+                        currentState.stop.type,
+                        context,
+                        glanceId
+                    )
+                    updateAppWidgetState(
+                        context,
+                        LineTripWidgetStateDefinition,
+                        glanceId
+                    ) { oldState ->
+                        if (oldState is WidgetState.StopTripsAvailable) oldState.copy(
+                            loading = false
+                        ) else oldState
+                    }
+                }
+
+                else -> {}
             }
             LineTripWidget().update(context, glanceId)
         }
