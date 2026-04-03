@@ -53,6 +53,12 @@ class LineTripWidgetWorker(
             )
             when (currentState) {
                 is WidgetState.LineTripsAvailable -> {
+                    if (currentState.referenceDateTime.isAfter(
+                            ZonedDateTime.now().minusMinutes(15)
+                        )
+                    ) {
+                        return@forEach
+                    }
                     updateAppWidgetState(
                         context,
                         LineTripWidgetStateDefinition,
@@ -107,6 +113,12 @@ class LineTripWidgetWorker(
                 }
 
                 is WidgetState.StopTripsAvailable -> {
+                    if (currentState.referenceDateTime.isAfter(
+                            ZonedDateTime.now().minusMinutes(15)
+                        )
+                    ) {
+                        return@forEach
+                    }
                     updateAppWidgetState(
                         context,
                         LineTripWidgetStateDefinition,
