@@ -8,7 +8,6 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
-import androidx.glance.LocalGlanceId
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionRunCallback
@@ -53,7 +52,6 @@ fun TripViewStopsGlance(
     modifier: GlanceModifier = GlanceModifier,
 ) {
     val context = LocalContext.current
-    val glanceId = LocalGlanceId.current
     LazyColumn(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
