@@ -74,7 +74,8 @@ class LineTripWidget : GlanceAppWidget() {
                             onDirectionClickAction = actionRunCallback<ToggleDirectionAction>(),
                             prevEnabled = state.prevEnabled,
                             nextEnabled = state.nextEnabled,
-                            isFavorite = state.line?.isFavorite ?: false
+                            isFavorite = state.line?.isFavorite ?: false,
+                            showPrevStop = state.showPrevStop,
                         )
 
                     is WidgetState.StopTripsAvailable -> {
@@ -89,13 +90,15 @@ class LineTripWidget : GlanceAppWidget() {
                             onLineClickAction = actionStartActivity(configIntent),
                             prevEnabled = state.prevEnabled,
                             nextEnabled = state.nextEnabled,
-                            isFavorite = state.stop?.isFavorite ?: false
+                            isFavorite = state.stop?.isFavorite ?: false,
+                            showPrevStop = state.showPrevStop
                         )
                     }
 
                     is WidgetState.Unavailable -> Box(
                         contentAlignment = Alignment.Center,
-                        modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.background)
+                        modifier = GlanceModifier.fillMaxSize()
+                            .background(GlanceTheme.colors.background)
                     ) {
                         Text(
                             text = context.getString(R.string.error),
@@ -250,6 +253,7 @@ fun MyWidgetPreview() {
             nextEnabled = true,
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
+            showPrevStop = false
         )
     }
 }

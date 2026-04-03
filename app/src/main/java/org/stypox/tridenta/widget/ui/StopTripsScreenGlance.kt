@@ -38,6 +38,7 @@ fun StopTripsScreenGlance(
     onNextAction: Action,
     onLineClickAction: Action,
     isFavorite: Boolean,
+    showPrevStop: Boolean,
 ) {
     Column(
         modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.background)
@@ -53,7 +54,8 @@ fun StopTripsScreenGlance(
             prevEnabled = prevEnabled,
             nextEnabled = nextEnabled,
             stopIdToHighlight = stop?.stopId,
-            stopTypeToHighlight = stop?.type
+            stopTypeToHighlight = stop?.type,
+            showPrevStop,
         )
     }
 }

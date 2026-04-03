@@ -8,6 +8,7 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalGlanceId
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionRunCallback
@@ -38,6 +39,7 @@ import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.util.formatConcatStrings
 import org.stypox.tridenta.util.formatTime
 import org.stypox.tridenta.widget.actions.OnStopClickAction
+import org.stypox.tridenta.widget.actions.ToggleShowPrevStop
 import org.stypox.tridenta.widget.actions.WidgetKeys
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -47,14 +49,92 @@ fun TripViewStopsGlance(
     trip: UiTrip,
     stopIdToHighlight: Int?,
     stopTypeToHighlight: StopLineType?,
+    showPrevStop: Boolean,
     modifier: GlanceModifier = GlanceModifier,
 ) {
     val context = LocalContext.current
+    val glanceId = LocalGlanceId.current
     LazyColumn(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        item {
+            val index = 0
+            val stopTime = trip.stopTimes[index]
+            TripViewStopItemGlance(
+                trip = trip,
+                highlight = stopTime.stop != null &&
+                        stopTime.stop.stopId == stopIdToHighlight &&
+                        stopTime.stop.type == stopTypeToHighlight,
+                completed = index < trip.completedStops,
+                stopTime = stopTime,
+                modifier = if (stopTime.stop == null) {
+                    GlanceModifier // not clickable, since there is no stop
+                } else {
+                    GlanceModifier.clickable(
+                        actionRunCallback<OnStopClickAction>(
+                            actionParametersOf(
+                                WidgetKeys.STOP_ID to stopTime.stop.stopId,
+                                WidgetKeys.STOP_TYPE to stopTime.stop.type.name
+                            )
+                        )
+                    )
+                }
+            )
+        }
+
+        item {
+            if (trip.completedStops < 2) return@item
+            Row(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = GlanceModifier.fillMaxWidth()
+                    .clickable(actionRunCallback<ToggleShowPrevStop>())
+            ) {
+                Text(
+                    if (showPrevStop) "Hide completed stops" else "Show completed stops",
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurface
+                    ),
+                    modifier = GlanceModifier.padding(8.dp)
+                )
+                Image(
+                    ImageProvider(if (showPrevStop) R.drawable.arrow_up else R.drawable.arrow_down),
+                    contentDescription = "toggle show stops",
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+                    modifier = GlanceModifier.padding(8.dp)
+                )
+            }
+        }
+
         itemsIndexed(trip.stopTimes) { index, stopTime ->
+            if (!(trip.stopTimes.size - 1 > index && index > 0)) return@itemsIndexed
+            if (!showPrevStop && index < trip.completedStops) return@itemsIndexed
+            TripViewStopItemGlance(
+                trip = trip,
+                highlight = stopTime.stop != null &&
+                        stopTime.stop.stopId == stopIdToHighlight &&
+                        stopTime.stop.type == stopTypeToHighlight,
+                completed = index < trip.completedStops,
+                stopTime = stopTime,
+                modifier = if (stopTime.stop == null) {
+                    GlanceModifier // not clickable, since there is no stop
+                } else {
+                    GlanceModifier.clickable(
+                        actionRunCallback<OnStopClickAction>(
+                            actionParametersOf(
+                                WidgetKeys.STOP_ID to stopTime.stop.stopId,
+                                WidgetKeys.STOP_TYPE to stopTime.stop.type.name
+                            )
+                        )
+                    )
+                }
+            )
+        }
+
+        item {
+            val index = trip.stopTimes.size - 1
+            val stopTime = trip.stopTimes[index]
             TripViewStopItemGlance(
                 trip = trip,
                 highlight = stopTime.stop != null &&
@@ -371,6 +451,7 @@ fun TripViewStopsPreview() {
             ),
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
+            showPrevStop = false,
         )
     }
 }

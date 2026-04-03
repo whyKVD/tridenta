@@ -41,6 +41,7 @@ fun LineTripsWidgetScreen(
     prevEnabled: Boolean,
     nextEnabled: Boolean,
     isFavorite: Boolean,
+    showPrevStop: Boolean,
     directionFilter: Direction,
     onReloadAction: Action,
     onPrevAction: Action,
@@ -68,7 +69,8 @@ fun LineTripsWidgetScreen(
             prevEnabled = prevEnabled,
             nextEnabled = nextEnabled,
             stopIdToHighlight = null,
-            stopTypeToHighlight = null
+            stopTypeToHighlight = null,
+            showPrevStop
         )
     }
 }

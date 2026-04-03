@@ -64,6 +64,7 @@ fun TripViewGlance(
     nextEnabled: Boolean,
     stopIdToHighlight: Int?,
     stopTypeToHighlight: StopLineType?,
+    showPrevStop: Boolean,
     modifier: GlanceModifier = GlanceModifier
 ) {
     val context = LocalContext.current
@@ -71,7 +72,10 @@ fun TripViewGlance(
     Column(
         modifier = modifier.fillMaxSize(),
     ) {
-        Box(modifier = GlanceModifier.defaultWeight().fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = GlanceModifier.defaultWeight().fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
             if (trip != null) {
                 Column(
                     modifier = GlanceModifier.fillMaxSize(),
@@ -99,6 +103,7 @@ fun TripViewGlance(
                         trip = trip,
                         stopIdToHighlight = stopIdToHighlight,
                         stopTypeToHighlight = stopTypeToHighlight,
+                        showPrevStop,
                         modifier = GlanceModifier.defaultWeight() // Crucial for lists in Columns
                     )
                 }
@@ -489,6 +494,7 @@ private fun TripViewPreview() {
             nextEnabled = true,
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
+            showPrevStop = false,
         )
     }
 }
@@ -510,6 +516,7 @@ private fun TripViewPreviewLoading() {
             nextEnabled = true,
             stopIdToHighlight = null,
             stopTypeToHighlight = null,
+            showPrevStop = false
         )
     }
 }
