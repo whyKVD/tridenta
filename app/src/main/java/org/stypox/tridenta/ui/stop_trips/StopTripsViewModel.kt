@@ -14,7 +14,7 @@ import org.stypox.tridenta.extractor.ROME_ZONE_ID
 import org.stypox.tridenta.log.logError
 import org.stypox.tridenta.repo.StopTripsRepository
 import org.stypox.tridenta.repo.StopsRepository
-import org.stypox.tridenta.ui.navArgs
+import org.stypox.tridenta.navArgs
 import java.time.ZonedDateTime
 import javax.inject.Inject
 

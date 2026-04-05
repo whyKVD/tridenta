@@ -30,7 +30,7 @@ import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
 import org.stypox.tridenta.db.views.HistoryLineOrStop
-import org.stypox.tridenta.ui.destinations.*
+import org.stypox.tridenta.destinations.*
 import org.stypox.tridenta.ui.lines.LineShortName
 import org.stypox.tridenta.ui.theme.*
 

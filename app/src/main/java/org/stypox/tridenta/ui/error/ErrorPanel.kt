@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import org.stypox.tridenta.R
-import org.stypox.tridenta.ui.destinations.LogsScreenDestination
+import org.stypox.tridenta.destinations.LogsScreenDestination
 import org.stypox.tridenta.ui.theme.TitleText
 
 

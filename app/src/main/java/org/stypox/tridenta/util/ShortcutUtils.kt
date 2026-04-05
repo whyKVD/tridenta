@@ -17,8 +17,8 @@ import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.db.data.DbStop
 import org.stypox.tridenta.enums.CardinalPoint
 import org.stypox.tridenta.enums.StopLineType
-import org.stypox.tridenta.ui.destinations.LineTripsScreenDestination
-import org.stypox.tridenta.ui.destinations.StopTripsScreenDestination
+import org.stypox.tridenta.destinations.LineTripsScreenDestination
+import org.stypox.tridenta.destinations.StopTripsScreenDestination
 import org.stypox.tridenta.ui.nav.DEEP_LINK_PREFIX
 import java.lang.Float.min
 

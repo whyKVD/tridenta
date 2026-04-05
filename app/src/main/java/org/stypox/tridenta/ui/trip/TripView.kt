@@ -28,8 +28,8 @@ import org.stypox.tridenta.repo.data.UiLine
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.sample.SampleDbStopProvider
 import org.stypox.tridenta.sample.SampleUiTripProvider
-import org.stypox.tridenta.ui.destinations.LineTripsScreenDestination
-import org.stypox.tridenta.ui.destinations.StopTripsScreenDestination
+import org.stypox.tridenta.destinations.LineTripsScreenDestination
+import org.stypox.tridenta.destinations.StopTripsScreenDestination
 import org.stypox.tridenta.ui.error.ErrorPanel
 import org.stypox.tridenta.ui.error.ErrorRow
 import org.stypox.tridenta.ui.theme.*

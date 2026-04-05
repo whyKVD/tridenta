@@ -33,8 +33,8 @@ import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import org.stypox.tridenta.R
 import org.stypox.tridenta.repo.data.UiStop
 import org.stypox.tridenta.sample.SampleUiStopProvider
-import org.stypox.tridenta.ui.destinations.LineTripsScreenDestination
-import org.stypox.tridenta.ui.destinations.StopTripsScreenDestination
+import org.stypox.tridenta.destinations.LineTripsScreenDestination
+import org.stypox.tridenta.destinations.StopTripsScreenDestination
 import org.stypox.tridenta.ui.error.ErrorPanel
 import org.stypox.tridenta.ui.error.ErrorRow
 import org.stypox.tridenta.ui.nav.AppBarDrawerIcon

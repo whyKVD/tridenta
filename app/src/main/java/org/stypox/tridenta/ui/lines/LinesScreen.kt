@@ -25,7 +25,7 @@ import org.stypox.tridenta.R
 import org.stypox.tridenta.db.data.DbLine
 import org.stypox.tridenta.enums.Area
 import org.stypox.tridenta.sample.SampleDbLineProvider
-import org.stypox.tridenta.ui.destinations.LineTripsScreenDestination
+import org.stypox.tridenta.destinations.LineTripsScreenDestination
 import org.stypox.tridenta.ui.error.ErrorPanel
 import org.stypox.tridenta.ui.error.ErrorRow
 import org.stypox.tridenta.ui.nav.AppBarDrawerIcon

@@ -26,7 +26,7 @@ import org.stypox.tridenta.db.data.DbStop
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.sample.SampleDbStopProvider
 import org.stypox.tridenta.sample.SampleUiTripProvider
-import org.stypox.tridenta.ui.destinations.LineTripsScreenDestination
+import org.stypox.tridenta.destinations.LineTripsScreenDestination
 import org.stypox.tridenta.ui.nav.AppBarDrawerIcon
 import org.stypox.tridenta.ui.nav.AppBarFavoriteIcon
 import org.stypox.tridenta.ui.nav.DEEP_LINK_URL_PATTERN

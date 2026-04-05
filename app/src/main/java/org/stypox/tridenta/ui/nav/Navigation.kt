@@ -30,11 +30,11 @@ import com.ramcosta.composedestinations.rememberNavHostEngine
 import com.ramcosta.composedestinations.spec.Direction
 import kotlinx.coroutines.launch
 import org.stypox.tridenta.R
-import org.stypox.tridenta.ui.NavGraphs
-import org.stypox.tridenta.ui.destinations.LinesScreenDestination
 import org.stypox.tridenta.ui.theme.HeadlineText
 import org.stypox.tridenta.util.PreferenceKeys
 import androidx.core.content.edit
+import org.stypox.tridenta.NavGraphs
+import org.stypox.tridenta.destinations.LinesScreenDestination
 
 const val DEEP_LINK_PREFIX = "tridenta://"
 const val DEEP_LINK_URL_PATTERN = DEEP_LINK_PREFIX + FULL_ROUTE_PLACEHOLDER

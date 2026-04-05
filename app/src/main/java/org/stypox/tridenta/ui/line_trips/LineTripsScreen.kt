@@ -27,7 +27,7 @@ import org.stypox.tridenta.repo.data.UiLine
 import org.stypox.tridenta.repo.data.UiTrip
 import org.stypox.tridenta.sample.SampleUiLineProvider
 import org.stypox.tridenta.sample.SampleUiTripProvider
-import org.stypox.tridenta.ui.destinations.LineTripsScreenDestination
+import org.stypox.tridenta.destinations.LineTripsScreenDestination
 import org.stypox.tridenta.ui.lines.LineShortName
 import org.stypox.tridenta.ui.nav.AppBarDrawerIcon
 import org.stypox.tridenta.ui.nav.AppBarFavoriteIcon

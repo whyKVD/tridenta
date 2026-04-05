@@ -17,7 +17,7 @@ import org.stypox.tridenta.log.logError
 import org.stypox.tridenta.repo.LineTripsRepository
 import org.stypox.tridenta.repo.LinesRepository
 import org.stypox.tridenta.repo.data.UiTrip
-import org.stypox.tridenta.ui.navArgs
+import org.stypox.tridenta.navArgs
 import java.time.ZonedDateTime
 import javax.inject.Inject
 
