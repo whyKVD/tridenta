@@ -15,6 +15,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ramcosta.composedestinations.annotation.DeepLink
 import com.ramcosta.composedestinations.annotation.Destination
 import org.stypox.tridenta.R
@@ -31,12 +33,32 @@ import org.stypox.tridenta.enums.Area
 import org.stypox.tridenta.ui.lines.AreaChip
 import org.stypox.tridenta.ui.lines.LineItem
 import org.stypox.tridenta.ui.lines.LinesUiState
+import org.stypox.tridenta.ui.lines.LinesViewModel
 import org.stypox.tridenta.ui.lines.SelectAreaDialog
 import org.stypox.tridenta.ui.nav.DEEP_LINK_URL_PATTERN
 
 @Destination(
     deepLinks = [DeepLink(uriPattern = DEEP_LINK_URL_PATTERN)]
 )
+@Composable
+fun LineSelectionScreenWidget(
+    onLineSelected: (DbLine) -> Unit,
+) {
+    val linesViewModel: LinesViewModel = hiltViewModel()
+
+    val linesUiState by linesViewModel.uiState.collectAsState()
+    val lastReloadWasError by linesViewModel.lastReloadWasError.collectAsState()
+    return LineSelectionScreenWidget(
+        criticalError = linesUiState.error,
+        minorError = lastReloadWasError,
+        loading = linesUiState.loading,
+        onReload = linesViewModel::onReload,
+        state = linesUiState,
+        onLineSelected = onLineSelected,
+        setSelectedArea = linesViewModel::setSelectedArea
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LineSelectionScreenWidget(

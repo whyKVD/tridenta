@@ -59,11 +59,6 @@ class WidgetConfigurationActivity :
         setResult(RESULT_CANCELED)
 
         setContent {
-            val linesViewModel: LinesViewModel = hiltViewModel()
-
-            val linesUiState by linesViewModel.uiState.collectAsState()
-            val lastReloadWasError by linesViewModel.lastReloadWasError.collectAsState()
-
             AppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -71,15 +66,9 @@ class WidgetConfigurationActivity :
                 ) {
                     Box(modifier = Modifier.safeDrawingPadding()) {
                         LineSelectionScreenWidget(
-                            criticalError = linesUiState.error,
-                            minorError = lastReloadWasError,
-                            loading = linesUiState.loading,
-                            onReload = linesViewModel::onReload,
-                            state = linesUiState,
                             onLineSelected = { selectedLine ->
                                 saveWidgetConfiguration(selectedLine)
                             },
-                            setSelectedArea = linesViewModel::setSelectedArea
                         )
                     }
                 }
